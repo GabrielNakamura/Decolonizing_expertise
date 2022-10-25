@@ -1,0 +1,83 @@
+---
+title: "Getting and processing data from WoS"
+output: html_document
+date: "2022-10-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Querries in Web of Science
+
+The first part consists in submit a query in Web of Science (WoS), selecting a sample from WoS with specific characteristics:
+
+1.  Top 1000 highest cited paper for LA authors
+
+2.  From the previous articles select a sub-sample containing only articles in top ecology journals
+
+3.  Select single author papers from each region (LA, US and Canada, Europe and Asia)
+
+4.  For each paper download all the citations that each one received
+
+### Write and submit a auery for LA papers
+
+First query performed was Latin America countries, selecting the 100 top cited articles and filtering by some top ecology journals
+
+`WC = Ecology AND CU = (Brazil OR Argentina OR Uruguay OR Chile OR Paraguay OR Bolivia OR Peru OR Colombia OR Ecuador OR Venezuela OR Guyana OR Suriname OR Panama OR (Costa Rica) OR Nicaragua OR (El Salvador) OR Guatemala OR Mexico OR Cuba) AND (SO == ("NATURE ECOLOGY EVOLUTION" OR "TRENDS IN ECOLOGY EVOLUTION" OR "ECOLOGY LETTERS" OR "METHODS IN ECOLOGY AND EVOLUTION" OR "ECOLOGICAL APPLICATIONS" OR "GLOBAL ECOLOGY AND BIOGEOGRAPHY" OR "JOURNAL OF APPLIED ECOLOGY" OR "JOURNAL OF ANIMAL ECOLOGY" OR "BEHAVIORAL ECOLOGY" OR "GLOBAL CHANGE BIOLOGY" OR "FUNCTIONAL ECOLOGY" OR "ECOSYSTEMS" OR "ECOSPHERE" OR "MOLECULAR ECOLOGY" OR "ECOGRAPHY" OR "APPLIED VEGETATION SCIENCE" OR "ECOLOGY" OR "BIODIVERSITY AND CONSERVATION" OR "ECOLOGICAL MODELLING" OR "MICROBIAL ECOLOGY" OR "BIOLOGICAL CONSERVATION" OR "JOURNAL OF BIOGEOGRAPHY" OR "OECOLOGIA" OR "RESTORATION ECOLOGY" OR "JOURNAL OF VEGETATION SCIENCE" OR "OIKOS" OR "LANDSCAPE ECOLOGY" OR "GLOBAL ECOLOGY AND CONSERVATION" OR "FRESHWATER BIOLOGY" OR "ANIMAL CONSERVATION" OR "CONSERVATION BIOLOGY" OR "JOURNAL OF ECOLOGY" OR "DIVERSITY AND DISTRIBUTIONS"))`
+
+Libraries
+
+```{r libs}
+library(bibliometrix)
+library(here)
+library(dplyr)
+```
+
+The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. This is the file named as `LA_top1000_01.txt` in `data/raw` folder of this repository
+
+```{r}
+files <- here::here("data", "raw", "LA_top1000_01.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+colnames(M)
+results <- biblioAnalysis(M, sep = ";")
+M_single_LA <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+
+```
+
+Since the query returns some single author papers from authors in which the affiliation does not correspond to a LA country, I applied a second filter to detect only author's affiliations that contains at least one Latin American country
+
+```{r filter_la1}
+la_names <- toupper(c("Brazil", "Argentina", "Uruguay", "Chile", "Paraguay", "Bolivia", "Peru", "Colombia", "Ecuador", "Venezuela", "Guyana", "Suriname", "Panama", "Costa Rica", "Nicaragua", "El Salvador", "Guatemala", "Mexico", "Cuba")) # Latin American country names
+s_paper_la <- unique(unlist(lapply(la_names, function(x) grep(x, M_single_LA$C1)))) # filtering by single author paper from LA 
+M_single_LA <- M_single_LA[s_paper_la, ] # unique single article papers from LA
+q_top_LA <- glue::glue_collapse(M_single_LA$UT,  sep = ' OR ') # querry for LA single-author paper 
+
+```
+After submitting the query I re-ordered the data frame to follow the same order in WoS, from the top to the least cited paper
+
+```{r}
+# ordering the data frame from the most to the least cited 
+M_single_LA <- M_single_LA[order(M_single_LA$TC, decreasing = TRUE), ]
+sum(M_single_LA$TC)
+M_single_LA$TC[1:10]
+
+files_citation <- here::here("data", "processed", "citation_report_LA.txt")
+citation_rep_LA <- read.csv(file = here::here("data", "processed", "citation_report_LA.csv"), sep = ",")
+sum(citation_rep_LA$Total.Citations)
+
+
+```
+
+Most 3000 recent citations from top 43 single author papers
+
+```{r}
+files <- here::here("data", "processed", "LA_cited_articles", c("01_citation_LA.txt", "02_citation_LA.txt", "03_citation_LA.txt"))
+M_citations_la <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_citation_la <- biblioAnalysis(M_citations_la, sep = ";")
+(results_citation_la$Countries[order(results_citation_la$Countries, decreasing = TRUE)])/sum(results_citation_la$Countries[order(results_citation_la$Countries, decreasing = TRUE)])
+```
+
+### Write and submit a auery for US and Canada papers
+
+

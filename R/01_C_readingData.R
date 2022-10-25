@@ -1,7 +1,11 @@
 
+# reading libraries  ------------------------------------------------------
+
 library(bibliometrix)
 library(here)
 library(dplyr)
+
+
 files <- here::here("data", "50_most_cited_LA.txt")
 M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
 results <- biblioAnalysis(M, sep = ";")
