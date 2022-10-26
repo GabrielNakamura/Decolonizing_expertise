@@ -22,7 +22,7 @@ The first part consists in submit a query in Web of Science (WoS), selecting a s
 
 ### Write and submit a auery for LA papers
 
-First query performed was Latin America countries, selecting the 100 top cited articles and filtering by some top ecology journals
+First query performed was Latin America countries, selecting the 1000 top cited articles and filtering by some top ecology journals
 
 `WC = Ecology AND CU = (Brazil OR Argentina OR Uruguay OR Chile OR Paraguay OR Bolivia OR Peru OR Colombia OR Ecuador OR Venezuela OR Guyana OR Suriname OR Panama OR (Costa Rica) OR Nicaragua OR (El Salvador) OR Guatemala OR Mexico OR Cuba) AND (SO == ("NATURE ECOLOGY EVOLUTION" OR "TRENDS IN ECOLOGY EVOLUTION" OR "ECOLOGY LETTERS" OR "METHODS IN ECOLOGY AND EVOLUTION" OR "ECOLOGICAL APPLICATIONS" OR "GLOBAL ECOLOGY AND BIOGEOGRAPHY" OR "JOURNAL OF APPLIED ECOLOGY" OR "JOURNAL OF ANIMAL ECOLOGY" OR "BEHAVIORAL ECOLOGY" OR "GLOBAL CHANGE BIOLOGY" OR "FUNCTIONAL ECOLOGY" OR "ECOSYSTEMS" OR "ECOSPHERE" OR "MOLECULAR ECOLOGY" OR "ECOGRAPHY" OR "APPLIED VEGETATION SCIENCE" OR "ECOLOGY" OR "BIODIVERSITY AND CONSERVATION" OR "ECOLOGICAL MODELLING" OR "MICROBIAL ECOLOGY" OR "BIOLOGICAL CONSERVATION" OR "JOURNAL OF BIOGEOGRAPHY" OR "OECOLOGIA" OR "RESTORATION ECOLOGY" OR "JOURNAL OF VEGETATION SCIENCE" OR "OIKOS" OR "LANDSCAPE ECOLOGY" OR "GLOBAL ECOLOGY AND CONSERVATION" OR "FRESHWATER BIOLOGY" OR "ANIMAL CONSERVATION" OR "CONSERVATION BIOLOGY" OR "JOURNAL OF ECOLOGY" OR "DIVERSITY AND DISTRIBUTIONS"))`
 
@@ -80,4 +80,34 @@ results_citation_la <- biblioAnalysis(M_citations_la, sep = ";")
 
 ### Write and submit a auery for US and Canada papers
 
+Query used to search 1000 most cited papers in US and Canada
 
+`WC = Ecology AND CU = (Canada OR United States OR USA)`
+
+The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. This is the file named as `US_CAN_top1000.txt` in `data/raw` folder of this repository
+
+```{r}
+files <- here::here("data", "raw", "US_CAN_top1000.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results <- biblioAnalysis(M, sep = ";")
+M_single_USA_CAN <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+head(M_single_USA_CAN)
+```
+
+Since the query returns some single author papers from authors in which the affiliation does not correspond to a US or Can , I applied a second filter to detect only author's affiliations that contains at least one of Canada or US
+
+```{r filter_la1}
+usa_can_names <- toupper(c("United States", "Canada", "United States of America", "USA")) # Latin American country names
+s_paper_can_usa <- unique(unlist(lapply(usa_can_names, function(x) grep(x, M_single_USA_CAN$C1)))) # filtering by single author paper from LA 
+M_single_USA_CAN <- M_single_USA_CAN[s_paper_can_usa, ] # unique single article papers from LA
+q_top_USA_CAN <- glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR ') # querry for LA single-author paper 
+
+```
+Most 5000 recent citations from top 235 single author papers
+
+```{r}
+files <- here::here("data", "processed", "USA_CAN_cited_articles", c("01_citation_USA_CAN.txt", "02_citation_USA_CAN.txt", "03_citation_USA_CAN.txt", "04_citation_USA_CAN.txt", "05_citation_USA_CAN.txt"))
+M_citations_usa_can <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_citation_usa_can <- biblioAnalysis(M_citations_usa_can, sep = ";")
+(results_citation_usa_can$Countries[order(results_citation_usa_can$Countries, decreasing = TRUE)])/sum(results_citation_usa_can$Countries[order(results_citation_usa_can$Countries, decreasing = TRUE)])
+```
