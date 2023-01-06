@@ -5,7 +5,7 @@ date: "2022-10-25"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 ```
 
 ## Querries in Web of Science
@@ -32,20 +32,21 @@ Libraries
 library(bibliometrix)
 library(here)
 library(dplyr)
+library(magrittr)
 ```
 
-The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. This is the file named as `LA_top1000_01.txt` in `data/raw` folder of this repository
+The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. This is the file named as `LA_top1000_01.txt` in `data/raw` folder of this repository. I read the data and converted it to bibliometrix format. 
+I also selected only first author papers since it avoids possible confounding factors (e.g. number of authors, senior authors etc.)
 
 ```{r}
-files <- here::here("data", "raw", "LA_top1000_01.txt")
-M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
-colnames(M)
-results <- biblioAnalysis(M, sep = ";")
-M_single_LA <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+files_LA <- here::here("data", "raw", "LA_top1000_01.txt")
+M_LA <- convert2df(file = files_LA, dbsource = 'wos', format = "plaintext")
+results_LA <- biblioAnalysis(M_LA, sep = ";")
+M_single_LA <- M_LA[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
 
 ```
 
-Since the query returns some single author papers from authors in which the affiliation does not correspond to a LA country, I applied a second filter to detect only author's affiliations that contains at least one Latin American country
+Since the query returns some single author papers from authors in which the affiliation does not correspond to a LA countries I applied a second filter to detect only author's affiliations containing at least one Latin American country
 
 ```{r filter_la1}
 la_names <- toupper(c("Brazil", "Argentina", "Uruguay", "Chile", "Paraguay", "Bolivia", "Peru", "Colombia", "Ecuador", "Venezuela", "Guyana", "Suriname", "Panama", "Costa Rica", "Nicaragua", "El Salvador", "Guatemala", "Mexico", "Cuba")) # Latin American country names
@@ -54,28 +55,30 @@ M_single_LA <- M_single_LA[s_paper_la, ] # unique single article papers from LA
 q_top_LA <- glue::glue_collapse(M_single_LA$UT,  sep = ' OR ') # querry for LA single-author paper 
 
 ```
-After submitting the query I re-ordered the data frame to follow the same order in WoS, from the top to the least cited paper
+
+We used the identifier obtained in the last step to submit a query in WoS. I re-ordered the data frame to follow the same order in WoS, from the top to the least cited paper
 
 ```{r}
 # ordering the data frame from the most to the least cited 
 M_single_LA <- M_single_LA[order(M_single_LA$TC, decreasing = TRUE), ]
-sum(M_single_LA$TC)
-M_single_LA$TC[1:10]
 
-files_citation <- here::here("data", "processed", "citation_report_LA.txt")
 citation_rep_LA <- read.csv(file = here::here("data", "processed", "citation_report_LA.csv"), sep = ",")
-sum(citation_rep_LA$Total.Citations)
+M_single_LA[, "AU"]
 
 
 ```
 
-Most 3000 recent citations from top 43 single author papers
+We then read the 3000 articles that correspond to the most recent citations from top 43 single author papers
 
 ```{r}
 files <- here::here("data", "processed", "LA_cited_articles", c("01_citation_LA.txt", "02_citation_LA.txt", "03_citation_LA.txt"))
-M_citations_la <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+M_citations_la <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # converting articles to bibliometrix format
 results_citation_la <- biblioAnalysis(M_citations_la, sep = ";")
-(results_citation_la$Countries[order(results_citation_la$Countries, decreasing = TRUE)])/sum(results_citation_la$Countries[order(results_citation_la$Countries, decreasing = TRUE)])
+countries_cite_LA <- results_citation_la$Countries[order(results_citation_la$Countries, decreasing = TRUE)]
+prop_countries_cite_LA <- (countries_cite_LA)/sum(countries_cite_LA)
+tab_citation_LA <- data.frame(countries = names(countries_cite_LA), 
+                              LA.citation = as.vector(countries_cite_LA), 
+                              LA.citation.prop = as.vector(prop_countries_cite_LA))
 ```
 
 ### Write and submit a auery for US and Canada papers
@@ -90,11 +93,11 @@ The query was downloaded from WoS as a plain text. I downloaded the full record 
 files <- here::here("data", "raw", "US_CAN_top1000.txt")
 M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
 results <- biblioAnalysis(M, sep = ";")
-M_single_USA_CAN <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
-head(M_single_USA_CAN)
+M_single_USA_CAN <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ] # single author papers for USA and CAN
+
 ```
 
-Since the query returns some single author papers from authors in which the affiliation does not correspond to a US or Can , I applied a second filter to detect only author's affiliations that contains at least one of Canada or US
+Since the query returns some single author papers from authors in which the affiliation does not correspond to a US or Can , I applied a second filter to select only author's affiliations that contains at least one of Canada or US affiliation in author's information
 
 ```{r filter_la1}
 usa_can_names <- toupper(c("United States", "Canada", "United States of America", "USA")) # Latin American country names
@@ -103,11 +106,66 @@ M_single_USA_CAN <- M_single_USA_CAN[s_paper_can_usa, ] # unique single article 
 q_top_USA_CAN <- glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR ') # querry for LA single-author paper 
 
 ```
-Most 5000 recent citations from top 235 single author papers
+
+Most 5000 recent citations from top 235 single author papers from. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search
 
 ```{r}
 files <- here::here("data", "processed", "USA_CAN_cited_articles", c("01_citation_USA_CAN.txt", "02_citation_USA_CAN.txt", "03_citation_USA_CAN.txt", "04_citation_USA_CAN.txt", "05_citation_USA_CAN.txt"))
-M_citations_usa_can <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+M_citations_usa_can <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
 results_citation_usa_can <- biblioAnalysis(M_citations_usa_can, sep = ";")
-(results_citation_usa_can$Countries[order(results_citation_usa_can$Countries, decreasing = TRUE)])/sum(results_citation_usa_can$Countries[order(results_citation_usa_can$Countries, decreasing = TRUE)])
+countries_cite_USA <- results_citation_usa_can$Countries[order(results_citation_usa_can$Countries, decreasing = TRUE)]
+prop_countries_cite_USA <- (countries_cite_USA)/sum(countries_cite_USA)
+tab_citation_USA <- data.frame(countries = names(countries_cite_USA), 
+                              LA.citation = as.vector(countries_cite_USA), 
+                              LA.citation.prop = as.vector(prop_countries_cite_USA))
 ```
+
+### Binding the tables
+
+```{r}
+tab_all_citation <- 
+  tab_citation_USA %>% 
+  right_join(tab_citation_LA, by = "countries") %>% 
+  rename(usa.citation = LA.citation.x) %>% 
+  rename(usa.citation.prop = LA.citation.prop.x) %>% 
+  rename(LA.citation = LA.citation.y) %>% 
+  rename(LA.citation.prop = LA.citation.prop.y)
+```
+```{r political_reg}
+library(ggplot2)
+library(tidyverse)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+countries <- ne_countries(scale = "medium", returnclass = "sf")
+names_LA <- subset(countries, region_wb == "Latin America & Caribbean")$admin
+names_NA <- subset(countries, region_wb == "North America")$admin
+names_NA[4] <- "Usa"
+names_EU <- subset(countries, region_wb == "Europe & Central Asia")$admin
+
+tab_all_citation$continent <- NA
+tab_all_citation$countries <- str_to_title(tab_all_citation$countries)
+tab_all_citation[tab_all_citation$countries %in% names_LA, "continent"] <- "Latin America"
+tab_all_citation[tab_all_citation$countries %in% names_NA, "continent"] <- "North America"
+tab_all_citation[tab_all_citation$countries %in% names_EU, "continent"] <- "Europe"
+```
+
+```{r plot}
+library(cowplot)
+
+usa_citation_plot <- 
+ggplot(data = tab_all_citation) +
+  geom_violin(aes(x = continent, y = usa.citation.prop)) +
+  scale_y_continuous(limits = c(0, 1), trans = "sqrt") 
+
+la_citation_plot <- 
+ggplot(data = tab_all_citation) +
+  geom_violin(aes(x = continent, y = LA.citation.prop)) +
+  scale_y_continuous(limits = c(0, 1), trans = "sqrt")
+
+plot_grid(usa_citation_plot, la_citation_plot, ncol = 2)
+
+```
+
+
