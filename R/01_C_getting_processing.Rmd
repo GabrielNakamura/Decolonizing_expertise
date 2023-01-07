@@ -153,10 +153,10 @@ results_citation_usa_can <- biblioAnalysis(M_citations_usa_can, sep = ";")
 countries_cite_USA <- results_citation_usa_can$Countries[order(results_citation_usa_can$Countries, decreasing = TRUE)]
 prop_countries_cite_USA <- (countries_cite_USA)/sum(countries_cite_USA)
 tab_citation_USA <- data.frame(countries = names(countries_cite_USA), 
-                              LA.citation = as.vector(countries_cite_USA), 
-                              LA.citation.prop = as.vector(prop_countries_cite_USA))
+                              usa.citation = as.vector(countries_cite_USA), 
+                              usa.citation.prop = as.vector(prop_countries_cite_USA))
 ```
-### Querryng papers in europe
+#### Querryng papers in europe
 
 Using the query for EU countries
 
@@ -172,23 +172,57 @@ M_single_EU <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x
 Now selecting single author papers
 
 ```{r}
-eu_names <- toupper(c("Hungary", "Belarus", "Austria", "Serbia", "Switzerland", "Germany", "Andorra", "Bulgaria", "United Kingdom", "UK", "England", "Scotland", "Wales", "France", "Montenegro", "Luxembourg",  "Italy", "Denmark", "Finland", "Slovakia", "Norway", "Ireland", "Spain", "Malta", "Ukraine", "Croatia", "Moldova", "Monaco", "Liechtenstein", "Poland", "Iceland", "San Marino", "Bosnia and Herzegovina", "Albania", "Lithuania", "North Macedonia", "Slovenia", "Romania", "Latvia", "Netherlands", "Russian Federation", "Estonia", "Belgium", "Czech Republic", "Czechia", "Greece", "Portugal", "Sweden"))
+eu_names <- toupper(names_EU)
 s_paper_eu <- unique(unlist(lapply(eu_names, function(x) grep(x, M_single_EU$C1)))) # filtering by single author paper from LA 
 M_single_EU <- M_single_EU[s_paper_eu, ] # unique single article papers from LA
-q_top_EU <- glue::glue_collapse(M_single_EU$UT,  sep = ' OR ') # querry for LA single-author paper 
+glue("UT = (", glue::glue_collapse(M_single_EU$UT,  sep = ' OR '), ")")
+q_top_EU <- glue("UT = (", glue::glue_collapse(M_single_EU$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
 ```
 We used the previous querry to find the single article authors in WoS
 
 ```{r}
-files <- here::here("data", "processed", "EU_citing_articles", c("01_citation_EU.txt", "02_citation_EU.txt", "03_citation_EU.txt", "04_citation_EU.txt", "05_citation_EU.txt"))
+files <- here::here("data", "processed", "EU_citing_articles", c("01_citing_EU.txt", "02_citing_EU.txt", "03_citing_EU.txt", "04_citing_EU.txt", "05_citing_EU.txt", "06_citing_EU.txt", "07_citing_EU.txt", "08_citing_EU.txt", "09_citing_EU.txt", "10_citing_EU.txt"))
 M_citations_EU <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
 results_citation_EU <- biblioAnalysis(M_citations_EU, sep = ";")
 countries_cite_EU <- results_citation_EU$Countries[order(results_citation_EU$Countries, decreasing = TRUE)]
 prop_countries_cite_EU <- (countries_cite_EU)/sum(countries_cite_EU)
 tab_citation_EU <- data.frame(countries = names(countries_cite_EU), 
-                              LA.citation = as.vector(countries_cite_EU), 
-                              LA.citation.prop = as.vector(prop_countries_cite_EU))
+                              eu.citation = as.vector(countries_cite_EU), 
+                              eu.citation.prop = as.vector(prop_countries_cite_EU))
 ```
+
+#### Queryng papers in Asian
+
+```{r}
+query_EastAsia
+
+files <- here::here("data", "raw", "EastAsia_top1000.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_EastAsia <- biblioAnalysis(M, sep = ";")
+M_single_EastAsia <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+
+```
+
+
+
+```{r}
+eastasia_names <- toupper(names_EastAsia)
+s_paper_eastasia <- unique(unlist(lapply(eastasia_names, function(x) grep(x, M_single_EastAsia$C1)))) # filtering by single author paper from LA 
+M_single_EastAsia <- M_single_EastAsia[s_paper_eastasia, ] # unique single article papers from LA
+q_top_EastAsia <- glue("UT = (", glue::glue_collapse(M_single_EastAsia$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
+```
+
+```{r}
+files <- here::here("data", "processed", "EastAsia_citing_articles", c("01_citing_EastAsia.txt", "02_citing_EastAsia.txt", "03_citing_EastAsia.txt", "04_citing_EastAsia.txt", "05_citing_EastAsia.txt", "06_citing_EastAsia.txt", "07_citing_EastAsia.txt"))
+M_citations_EastAsia <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
+results_citation_EastAsia <- biblioAnalysis(M_citations_EastAsia, sep = ";")
+countries_cite_EastAsia <- results_citation_EastAsia$Countries[order(results_citation_EastAsia$Countries, decreasing = TRUE)]
+prop_countries_cite_EastAsia <- (countries_cite_EastAsia)/sum(countries_cite_EastAsia)
+tab_citation_EastAsia <- data.frame(countries = names(countries_cite_EastAsia), 
+                              EastAsia.citation = as.vector(countries_cite_EastAsia), 
+                              EastAsia.citation.prop = as.vector(prop_countries_cite_EastAsia))
+```
+
 
 
 ### Binding the tables and plotting the results
@@ -198,12 +232,7 @@ tab_all_citation <-
   tab_citation_USA %>% 
   right_join(tab_citation_LA, by = "countries") %>% 
   right_join(tab_citation_EU, by = "countries")  %>% 
-  rename(usa.citation = LA.citation.x) %>% 
-  rename(usa.citation.prop = LA.citation.prop.x) %>% 
-  rename(LA.citation.total = LA.citation.y) %>% 
-  rename(LA.citation.proportion = LA.citation.prop.y) %>% 
-  rename(eu.citation = LA.citation) %>% 
-  rename(eu.citation.prop = LA.citation.prop)
+  right_join(tab_citation_EastAsia, by = "countries")
 ```
 
 
@@ -214,13 +243,6 @@ library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
-countries <- ne_countries(scale = "medium", returnclass = "sf")
-names_LA <- subset(countries, region_wb == "Latin America & Caribbean")$admin
-names_NA <- subset(countries, region_wb == "North America")$admin
-names_NA[4] <- "Usa"
-names_EU <- subset(countries, region_wb == "Europe & Central Asia")$admin
-names_MidleEastAfrica <- subset(countries, region_wb == "Middle East & North Africa")$admin
-names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
 
 tab_all_citation$continent <- NA
 tab_all_citation$countries <- str_to_title(tab_all_citation$countries)
@@ -229,6 +251,7 @@ tab_all_citation[tab_all_citation$countries %in% names_NA, "continent"] <- "USA 
 tab_all_citation[tab_all_citation$countries %in% names_EU, "continent"] <- "Europe"
 tab_all_citation[tab_all_citation$countries %in% names_MidleEastAfrica, "continent"] <- "Middle East & Africa"
 tab_all_citation[tab_all_citation$countries %in% names_EastAsia, "continent"] <- "East Asia"
+tab_all_citation[tab_all_citation$countries %in% names_SouthAsia, "continent"] <- "South Asia"
 
 ```
 
@@ -244,20 +267,20 @@ ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
                width = 0.3,
                colour = "blue") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
-  ylab("Proportion of citations") +
+  ylab("Proportion of citations (USA-CAN)") +
   xlab("Region") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
 
 la_citation_plot <- 
-ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.proportion)) +
+ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.prop)) +
   geom_violin() +
   geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
   stat_summary(fun = "mean",
                geom = "crossbar", 
                width = 0.3,
                colour = "blue") +
-  ylab("Proportion of citations") +
+  ylab("Proportion of citations LA") +
   xlab("Region") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
@@ -272,13 +295,49 @@ eu_citation_plot <-
                geom = "crossbar", 
                width = 0.3,
                colour = "blue") +
-  ylab("Proportion of citations") +
+  ylab("Proportion of citations EU") +
   xlab("Region") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
 
-plot_grid(usa_citation_plot, la_citation_plot, eu_citation_plot, ncol = 3)
+eastasia_citation_plot <- 
+  ggplot(data = tab_all_citation, aes(x = continent, y = EastAsia.citation.prop)) +
+    geom_violin() + 
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.3,
+               colour = "blue") +
+  ylab("Proportion of citations East Asia") +
+  xlab("Region") +
+  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
+
+
+plot_grid(usa_citation_plot, la_citation_plot, eu_citation_plot, eastasia_citation_plot, ncol = 4)
+
+H_usa <- 
+diversity(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)], index = "shannon")
+
+H_la <- 
+diversity(tab_all_citation$LA.citation[!is.na(tab_all_citation$LA.citation)], index = "shannon")
+
+H_eu <- diversity(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citation)], index = "shannon")
+
+H_eastasia <- diversity(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)], index = "shannon")
+
+
+H_usa/log(length(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)]))
+
+H_la/log(length(tab_all_citation$LA.citation[!is.na(tab_all_citation$LA.citation)]))
+
+H_eu/log(length(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citation)]))
+
+H_eastasia/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)]))
+
 
 ```
 
