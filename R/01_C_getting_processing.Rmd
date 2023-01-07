@@ -119,18 +119,58 @@ tab_citation_USA <- data.frame(countries = names(countries_cite_USA),
                               LA.citation = as.vector(countries_cite_USA), 
                               LA.citation.prop = as.vector(prop_countries_cite_USA))
 ```
+### Querryng papers in europe
 
-### Binding the tables
+We used the following terms for searching papers in WoS
+
+`WC = Ecology AND CU = (Hungary OR Belarus OR Austria OR Serbia OR Switzerland OR Germany OR Andorra OR Bulgaria OR (United Kingdom) OR UK OR England OR Scotland OR Wales OR France OR Montenegro OR Luxembourg OR Italy OR Denmark OR Finland OR Slovakia OR Norway OR Ireland OR Spain OR Malta OR Ukraine OR Croatia OR Moldova OR Monaco OR Liechtenstein OR Poland OR Iceland OR (San Marino) OR (Bosnia and Herzegovina) OR Albania OR Lithuania OR (North Macedonia) OR Slovenia OR Romania OR Latvia OR Netherlands OR (Russian Federation) OR Estonia OR Belgium OR (Czech Republic) OR Czechia OR Greece OR Portugal OR Sweden) and NATURE ECOLOGY EVOLUTION or TRENDS IN ECOLOGY EVOLUTION or ECOLOGY or ECOLOGY LETTERS or METHODS IN ECOLOGY AND EVOLUTION or ECOLOGICAL APPLICATIONS or GLOBAL ECOLOGY AND BIOGEOGRAPHY or JOURNAL OF APPLIED ECOLOGY or JOURNAL OF ANIMAL ECOLOGY or BEHAVIORAL ECOLOGY or GLOBAL CHANGE BIOLOGY or FUNCTIONAL ECOLOGY or ECOSPHERE or ECOSYSTEMS or MOLECULAR ECOLOGY or ECOGRAPHY or APPLIED VEGETATION SCIENCE or BIODIVERSITY AND CONSERVATION or ECOLOGICAL MODELLING or MICROBIAL ECOLOGY or BIOLOGICAL CONSERVATION or JOURNAL OF BIOGEOGRAPHY or OECOLOGIA or RESTORATION ECOLOGY or JOURNAL OF VEGETATION SCIENCE or OIKOS or LANDSCAPE ECOLOGY or GLOBAL ECOLOGY AND CONSERVATION or FRESHWATER BIOLOGY or ANIMAL CONSERVATION or CONSERVATION BIOLOGY or JOURNAL OF ECOLOGY or DIVERSITY AND DISTRIBUTIONS`
+
+```{r}
+files <- here::here("data", "raw", "EU_top1000.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_EU <- biblioAnalysis(M, sep = ";")
+M_single_EU <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+```
+
+
+Now selecting single author papers
+
+```{r}
+eu_names <- toupper(c("Hungary", "Belarus", "Austria", "Serbia", "Switzerland", "Germany", "Andorra", "Bulgaria", "United Kingdom", "UK", "England", "Scotland", "Wales", "France", "Montenegro", "Luxembourg",  "Italy", "Denmark", "Finland", "Slovakia", "Norway", "Ireland", "Spain", "Malta", "Ukraine", "Croatia", "Moldova", "Monaco", "Liechtenstein", "Poland", "Iceland", "San Marino", "Bosnia and Herzegovina", "Albania", "Lithuania", "North Macedonia", "Slovenia", "Romania", "Latvia", "Netherlands", "Russian Federation", "Estonia", "Belgium", "Czech Republic", "Czechia", "Greece", "Portugal", "Sweden"))
+s_paper_eu <- unique(unlist(lapply(eu_names, function(x) grep(x, M_single_EU$C1)))) # filtering by single author paper from LA 
+M_single_EU <- M_single_EU[s_paper_eu, ] # unique single article papers from LA
+q_top_EU <- glue::glue_collapse(M_single_EU$UT,  sep = ' OR ') # querry for LA single-author paper 
+```
+We used the previous querry to find the single article authors in WoS
+
+```{r}
+files <- here::here("data", "processed", "EU_cited_articles", c("01_citation_EU.txt", "02_citation_EU.txt", "03_citation_EU.txt", "04_citation_EU.txt", "05_citation_EU.txt"))
+M_citations_EU <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
+results_citation_EU <- biblioAnalysis(M_citations_EU, sep = ";")
+countries_cite_EU <- results_citation_EU$Countries[order(results_citation_EU$Countries, decreasing = TRUE)]
+prop_countries_cite_EU <- (countries_cite_EU)/sum(countries_cite_EU)
+tab_citation_EU <- data.frame(countries = names(countries_cite_EU), 
+                              LA.citation = as.vector(countries_cite_EU), 
+                              LA.citation.prop = as.vector(prop_countries_cite_EU))
+```
+
+
+### Binding the tables and plotting the results
 
 ```{r}
 tab_all_citation <- 
   tab_citation_USA %>% 
   right_join(tab_citation_LA, by = "countries") %>% 
+  right_join(tab_citation_EU, by = "countries")  %>% 
   rename(usa.citation = LA.citation.x) %>% 
   rename(usa.citation.prop = LA.citation.prop.x) %>% 
-  rename(LA.citation = LA.citation.y) %>% 
-  rename(LA.citation.prop = LA.citation.prop.y)
+  rename(LA.citation.total = LA.citation.y) %>% 
+  rename(LA.citation.proportion = LA.citation.prop.y) %>% 
+  rename(eu.citation = LA.citation) %>% 
+  rename(eu.citation.prop = LA.citation.prop)
 ```
+
+
 ```{r political_reg}
 library(ggplot2)
 library(tidyverse)
@@ -143,28 +183,66 @@ names_LA <- subset(countries, region_wb == "Latin America & Caribbean")$admin
 names_NA <- subset(countries, region_wb == "North America")$admin
 names_NA[4] <- "Usa"
 names_EU <- subset(countries, region_wb == "Europe & Central Asia")$admin
+names_MidleEastAfrica <- subset(countries, region_wb == "Middle East & North Africa")$admin
+names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
 
 tab_all_citation$continent <- NA
 tab_all_citation$countries <- str_to_title(tab_all_citation$countries)
 tab_all_citation[tab_all_citation$countries %in% names_LA, "continent"] <- "Latin America"
-tab_all_citation[tab_all_citation$countries %in% names_NA, "continent"] <- "North America"
+tab_all_citation[tab_all_citation$countries %in% names_NA, "continent"] <- "USA and Can"
 tab_all_citation[tab_all_citation$countries %in% names_EU, "continent"] <- "Europe"
+tab_all_citation[tab_all_citation$countries %in% names_MidleEastAfrica, "continent"] <- "Middle East & Africa"
+tab_all_citation[tab_all_citation$countries %in% names_EastAsia, "continent"] <- "East Asia"
+
 ```
 
 ```{r plot}
 library(cowplot)
 
 usa_citation_plot <- 
-ggplot(data = tab_all_citation) +
-  geom_violin(aes(x = continent, y = usa.citation.prop)) +
-  scale_y_continuous(limits = c(0, 1), trans = "sqrt") 
+ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
+  geom_violin() +
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.3,
+               colour = "blue") +
+  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
+  ylab("Proportion of citations") +
+  xlab("Region") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
 
 la_citation_plot <- 
-ggplot(data = tab_all_citation) +
-  geom_violin(aes(x = continent, y = LA.citation.prop)) +
-  scale_y_continuous(limits = c(0, 1), trans = "sqrt")
+ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.proportion)) +
+  geom_violin() +
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.3,
+               colour = "blue") +
+  ylab("Proportion of citations") +
+  xlab("Region") +
+  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
 
-plot_grid(usa_citation_plot, la_citation_plot, ncol = 2)
+eu_citation_plot <- 
+  ggplot(data = tab_all_citation, aes(x = continent, y = eu.citation.prop)) +
+    geom_violin() + 
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.3,
+               colour = "blue") +
+  ylab("Proportion of citations") +
+  xlab("Region") +
+  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
+
+plot_grid(usa_citation_plot, la_citation_plot, eu_citation_plot, ncol = 3)
 
 ```
 
