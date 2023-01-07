@@ -8,7 +8,7 @@ date: "2022-10-25"
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 ```
 
-## Querries in Web of Science
+### Querries in Web of Science
 
 The first part consists in submit a query in Web of Science (WoS), selecting a sample from WoS with specific characteristics:
 
@@ -20,13 +20,57 @@ The first part consists in submit a query in Web of Science (WoS), selecting a s
 
 4.  For each paper download all the citations that each one received
 
-### Write and submit a auery for LA papers
+### Selecting regions based on World Bank classification
 
-First query performed was Latin America countries, selecting the 1000 top cited articles and filtering by some top ecology journals
+```{r}
+countries <- ne_countries(scale = "medium", returnclass = "sf")
+names_LA <- subset(countries, region_wb == "Latin America & Caribbean")$admin
+names_NA <- subset(countries, region_wb == "North America")$admin
+names_NA <- c(names_NA, "USA", "Usa", "United States")
+names_EU <- subset(countries, region_wb == "Europe & Central Asia")$admin
+names_EU <- c(names_EU, "England", "Scotland", "Wales", "UK")
+names_MidleEastAfrica <- subset(countries, region_wb == "Middle East & North Africa")$admin
+names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
+names_SouthAsia <- subset(countries, region_wb == "South Asia")$admin
+names_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")$admin
 
-`WC = Ecology AND CU = (Brazil OR Argentina OR Uruguay OR Chile OR Paraguay OR Bolivia OR Peru OR Colombia OR Ecuador OR Venezuela OR Guyana OR Suriname OR Panama OR (Costa Rica) OR Nicaragua OR (El Salvador) OR Guatemala OR Mexico OR Cuba) AND (SO == ("NATURE ECOLOGY EVOLUTION" OR "TRENDS IN ECOLOGY EVOLUTION" OR "ECOLOGY LETTERS" OR "METHODS IN ECOLOGY AND EVOLUTION" OR "ECOLOGICAL APPLICATIONS" OR "GLOBAL ECOLOGY AND BIOGEOGRAPHY" OR "JOURNAL OF APPLIED ECOLOGY" OR "JOURNAL OF ANIMAL ECOLOGY" OR "BEHAVIORAL ECOLOGY" OR "GLOBAL CHANGE BIOLOGY" OR "FUNCTIONAL ECOLOGY" OR "ECOSYSTEMS" OR "ECOSPHERE" OR "MOLECULAR ECOLOGY" OR "ECOGRAPHY" OR "APPLIED VEGETATION SCIENCE" OR "ECOLOGY" OR "BIODIVERSITY AND CONSERVATION" OR "ECOLOGICAL MODELLING" OR "MICROBIAL ECOLOGY" OR "BIOLOGICAL CONSERVATION" OR "JOURNAL OF BIOGEOGRAPHY" OR "OECOLOGIA" OR "RESTORATION ECOLOGY" OR "JOURNAL OF VEGETATION SCIENCE" OR "OIKOS" OR "LANDSCAPE ECOLOGY" OR "GLOBAL ECOLOGY AND CONSERVATION" OR "FRESHWATER BIOLOGY" OR "ANIMAL CONSERVATION" OR "CONSERVATION BIOLOGY" OR "JOURNAL OF ECOLOGY" OR "DIVERSITY AND DISTRIBUTIONS"))`
+```
 
-Libraries
+Now I create the queries which will be submitted to WoS. First I build a general string following the format of queries for WoS. To do so I 
+    subset the journals in which I want to perform my search and then glue them with the boolean characters and countries of 
+    each region (accordinglyWorld Bank classification). In case of wanting to change the journal subset the user only need to change the `journal_sub` vector with different journal names.
+
+```{r queries_journal}
+library(glue)
+
+journal_sub <- c("NATURE ECOLOGY EVOLUTION" , "TRENDS IN ECOLOGY EVOLUTION" , "ECOLOGY LETTERS" , "METHODS IN ECOLOGY AND EVOLUTION" , "ECOLOGICAL APPLICATIONS" , "GLOBAL ECOLOGY AND BIOGEOGRAPHY" , "JOURNAL OF APPLIED ECOLOGY" , "JOURNAL OF ANIMAL ECOLOGY" , "BEHAVIORAL ECOLOGY" , "GLOBAL CHANGE BIOLOGY" , "FUNCTIONAL ECOLOGY" , "ECOSYSTEMS" , "ECOSPHERE" , "MOLECULAR ECOLOGY" , "ECOGRAPHY" , "APPLIED VEGETATION SCIENCE" , "ECOLOGY" , "BIODIVERSITY AND CONSERVATION" , "ECOLOGICAL MODELLING" , "MICROBIAL ECOLOGY" , "BIOLOGICAL CONSERVATION" , "JOURNAL OF BIOGEOGRAPHY" , "OECOLOGIA" , "RESTORATION ECOLOGY" , "JOURNAL OF VEGETATION SCIENCE" , "OIKOS" , "LANDSCAPE ECOLOGY" , "GLOBAL ECOLOGY AND CONSERVATION" , "FRESHWATER BIOLOGY" , "ANIMAL CONSERVATION" , "CONSERVATION BIOLOGY" , "JOURNAL OF ECOLOGY" , "DIVERSITY AND DISTRIBUTIONS") # valid for all searches
+
+journal_query <- glue::glue('(SO == ("{(v)}"))', v = glue_collapse(journal_sub, '" OR "')) # general journal query pattern
+
+```
+
+With journal query pattern create then I can build the whole query by gluing country and journal
+
+```{r}
+  
+query_LA<- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_LA,  sep = ' OR '), ") AND ", journal_query)
+query_NA <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_NA,  sep = ' OR '), ") AND ", journal_query)
+query_EU <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_EU,  sep = ' OR '), ") AND ", journal_query)
+query_MidleEastAfrica <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_MidleEastAfrica,  sep = ' OR '), ") AND ", journal_query)
+query_EastAsia <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_EastAsia,  sep = ' OR '), ") AND ", journal_query)
+query_SouthAsia <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_SouthAsia,  sep = ' OR '), ") AND ", journal_query)
+query_SubSahara <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_SubSahara,  sep = ' OR '), ") AND ", journal_query)
+
+```
+
+To replicate the same searches in WoS you only need to run one of the queries, copy the string vector printed in your console and paste it on 
+    search field in WoS
+
+### Processing queries
+
+
+We are gonna need some libraries to process the results from queries
+
 
 ```{r libs}
 library(bibliometrix)
@@ -35,43 +79,38 @@ library(dplyr)
 library(magrittr)
 ```
 
-The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. This is the file named as `LA_top1000_01.txt` in `data/raw` folder of this repository. I read the data and converted it to bibliometrix format. 
-I also selected only first author papers since it avoids possible confounding factors (e.g. number of authors, senior authors etc.)
+The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. Each file with query results are in the 
+    format `REGION_top1000.txt`. All can be found in `data/raw` folder of this repository. I read the data and converted it to bibliometrix format. 
+    
+#### LA processing
 
 ```{r}
-files_LA <- here::here("data", "raw", "LA_top1000_01.txt")
-M_LA <- convert2df(file = files_LA, dbsource = 'wos', format = "plaintext")
-results_LA <- biblioAnalysis(M_LA, sep = ";")
-M_single_LA <- M_LA[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
-
+files <- here::here("data", "raw", "LA_top1000.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_LA <- biblioAnalysis(M, sep = ";")
+M_single_LA <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
 ```
 
-Since the query returns some single author papers from authors in which the affiliation does not correspond to a LA countries I applied a second filter to detect only author's affiliations containing at least one Latin American country
+We selected only single author paper to avoid confounding factors, e.g colaborations, number of co-authors, correspondence author from region  nor corresponding to the search etc. Since the query returns some single author papers from authors in which the affiliation does not correspond to a LA countries I applied a second filter to detect only author's affiliations containing at least one Latin American country
 
 ```{r filter_la1}
-la_names <- toupper(c("Brazil", "Argentina", "Uruguay", "Chile", "Paraguay", "Bolivia", "Peru", "Colombia", "Ecuador", "Venezuela", "Guyana", "Suriname", "Panama", "Costa Rica", "Nicaragua", "El Salvador", "Guatemala", "Mexico", "Cuba")) # Latin American country names
+
+la_names <- toupper(names_LA) # Latin American country names
 s_paper_la <- unique(unlist(lapply(la_names, function(x) grep(x, M_single_LA$C1)))) # filtering by single author paper from LA 
 M_single_LA <- M_single_LA[s_paper_la, ] # unique single article papers from LA
-q_top_LA <- glue::glue_collapse(M_single_LA$UT,  sep = ' OR ') # querry for LA single-author paper 
+q_top_LA <- glue("UT = (", glue::glue_collapse(M_single_LA$UT,  sep = ' OR '), ")")
 
 ```
 
-We used the identifier obtained in the last step to submit a query in WoS. I re-ordered the data frame to follow the same order in WoS, from the top to the least cited paper
+We used the identifier obtained in the last step to submit a query in WoS. I re-ordered the results from the query to show
+    first the most cited papers that cited the single author papers. Again, I downloaded plain text files for the first 5000 articles
+    citing the top 1000 single author articles from LA
+
+
+Reading the 5000 articles that cited LA papers
 
 ```{r}
-# ordering the data frame from the most to the least cited 
-M_single_LA <- M_single_LA[order(M_single_LA$TC, decreasing = TRUE), ]
-
-citation_rep_LA <- read.csv(file = here::here("data", "processed", "citation_report_LA.csv"), sep = ",")
-M_single_LA[, "AU"]
-
-
-```
-
-We then read the 3000 articles that correspond to the most recent citations from top 43 single author papers
-
-```{r}
-files <- here::here("data", "processed", "LA_cited_articles", c("01_citation_LA.txt", "02_citation_LA.txt", "03_citation_LA.txt"))
+files <- here::here("data", "processed", "LA_citing_articles", c("01_citing_LA.txt", "02_citing_LA.txt", "03_citing_LA.txt",  "04_citing_LA.txt",  "05_citing_LA.txt"))
 M_citations_la <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # converting articles to bibliometrix format
 results_citation_la <- biblioAnalysis(M_citations_la, sep = ";")
 countries_cite_LA <- results_citation_la$Countries[order(results_citation_la$Countries, decreasing = TRUE)]
@@ -81,7 +120,7 @@ tab_citation_LA <- data.frame(countries = names(countries_cite_LA),
                               LA.citation.prop = as.vector(prop_countries_cite_LA))
 ```
 
-### Write and submit a auery for US and Canada papers
+#### Write and submit a auery for US and Canada papers
 
 Query used to search 1000 most cited papers in US and Canada
 
