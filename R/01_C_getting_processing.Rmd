@@ -120,16 +120,14 @@ tab_citation_LA <- data.frame(countries = names(countries_cite_LA),
                               LA.citation.prop = as.vector(prop_countries_cite_LA))
 ```
 
-#### Write and submit a auery for US and Canada papers
+#### Write and submit a query for US and Canada papers
 
 Query used to search 1000 most cited papers in US and Canada
-
-`WC = Ecology AND CU = (Canada OR United States OR USA)`
 
 The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. This is the file named as `US_CAN_top1000.txt` in `data/raw` folder of this repository
 
 ```{r}
-files <- here::here("data", "raw", "US_CAN_top1000.txt")
+files <- here::here("data", "raw", "USA_CAN_top1000.txt")
 M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
 results <- biblioAnalysis(M, sep = ";")
 M_single_USA_CAN <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ] # single author papers for USA and CAN
@@ -139,17 +137,17 @@ M_single_USA_CAN <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), funct
 Since the query returns some single author papers from authors in which the affiliation does not correspond to a US or Can , I applied a second filter to select only author's affiliations that contains at least one of Canada or US affiliation in author's information
 
 ```{r filter_la1}
-usa_can_names <- toupper(c("United States", "Canada", "United States of America", "USA")) # Latin American country names
+usa_can_names <- toupper(names_NA) # Latin American country names
 s_paper_can_usa <- unique(unlist(lapply(usa_can_names, function(x) grep(x, M_single_USA_CAN$C1)))) # filtering by single author paper from LA 
 M_single_USA_CAN <- M_single_USA_CAN[s_paper_can_usa, ] # unique single article papers from LA
-q_top_USA_CAN <- glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR ') # querry for LA single-author paper 
+q_top_USA_CAN <- glue("UT = (", glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR '), ")")
 
 ```
 
-Most 5000 recent citations from top 235 single author papers from. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search
+Most 10000 recent citations from top 235 single author papers from. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search
 
 ```{r}
-files <- here::here("data", "processed", "USA_CAN_cited_articles", c("01_citation_USA_CAN.txt", "02_citation_USA_CAN.txt", "03_citation_USA_CAN.txt", "04_citation_USA_CAN.txt", "05_citation_USA_CAN.txt"))
+files <- here::here("data", "processed", "USA_CAN_citing_articles", c("01_citing_USA_CAN.txt", "02_citing_USA_CAN.txt", "03_citing_USA_CAN.txt", "04_citing_USA_CAN.txt", "05_citing_USA_CAN.txt", "06_citing_USA_CAN.txt", "07_citing_USA_CAN.txt", "08_citing_USA_CAN.txt", "09_citing_USA_CAN.txt", "10_citing_USA_CAN.txt"))
 M_citations_usa_can <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
 results_citation_usa_can <- biblioAnalysis(M_citations_usa_can, sep = ";")
 countries_cite_USA <- results_citation_usa_can$Countries[order(results_citation_usa_can$Countries, decreasing = TRUE)]
@@ -160,9 +158,8 @@ tab_citation_USA <- data.frame(countries = names(countries_cite_USA),
 ```
 ### Querryng papers in europe
 
-We used the following terms for searching papers in WoS
+Using the query for EU countries
 
-`WC = Ecology AND CU = (Hungary OR Belarus OR Austria OR Serbia OR Switzerland OR Germany OR Andorra OR Bulgaria OR (United Kingdom) OR UK OR England OR Scotland OR Wales OR France OR Montenegro OR Luxembourg OR Italy OR Denmark OR Finland OR Slovakia OR Norway OR Ireland OR Spain OR Malta OR Ukraine OR Croatia OR Moldova OR Monaco OR Liechtenstein OR Poland OR Iceland OR (San Marino) OR (Bosnia and Herzegovina) OR Albania OR Lithuania OR (North Macedonia) OR Slovenia OR Romania OR Latvia OR Netherlands OR (Russian Federation) OR Estonia OR Belgium OR (Czech Republic) OR Czechia OR Greece OR Portugal OR Sweden) and NATURE ECOLOGY EVOLUTION or TRENDS IN ECOLOGY EVOLUTION or ECOLOGY or ECOLOGY LETTERS or METHODS IN ECOLOGY AND EVOLUTION or ECOLOGICAL APPLICATIONS or GLOBAL ECOLOGY AND BIOGEOGRAPHY or JOURNAL OF APPLIED ECOLOGY or JOURNAL OF ANIMAL ECOLOGY or BEHAVIORAL ECOLOGY or GLOBAL CHANGE BIOLOGY or FUNCTIONAL ECOLOGY or ECOSPHERE or ECOSYSTEMS or MOLECULAR ECOLOGY or ECOGRAPHY or APPLIED VEGETATION SCIENCE or BIODIVERSITY AND CONSERVATION or ECOLOGICAL MODELLING or MICROBIAL ECOLOGY or BIOLOGICAL CONSERVATION or JOURNAL OF BIOGEOGRAPHY or OECOLOGIA or RESTORATION ECOLOGY or JOURNAL OF VEGETATION SCIENCE or OIKOS or LANDSCAPE ECOLOGY or GLOBAL ECOLOGY AND CONSERVATION or FRESHWATER BIOLOGY or ANIMAL CONSERVATION or CONSERVATION BIOLOGY or JOURNAL OF ECOLOGY or DIVERSITY AND DISTRIBUTIONS`
 
 ```{r}
 files <- here::here("data", "raw", "EU_top1000.txt")
@@ -183,7 +180,7 @@ q_top_EU <- glue::glue_collapse(M_single_EU$UT,  sep = ' OR ') # querry for LA s
 We used the previous querry to find the single article authors in WoS
 
 ```{r}
-files <- here::here("data", "processed", "EU_cited_articles", c("01_citation_EU.txt", "02_citation_EU.txt", "03_citation_EU.txt", "04_citation_EU.txt", "05_citation_EU.txt"))
+files <- here::here("data", "processed", "EU_citing_articles", c("01_citation_EU.txt", "02_citation_EU.txt", "03_citation_EU.txt", "04_citation_EU.txt", "05_citation_EU.txt"))
 M_citations_EU <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
 results_citation_EU <- biblioAnalysis(M_citations_EU, sep = ";")
 countries_cite_EU <- results_citation_EU$Countries[order(results_citation_EU$Countries, decreasing = TRUE)]
