@@ -8,6 +8,13 @@ date: "2022-10-25"
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 ```
 
+```{r}
+library(sf)
+library(rnaturalearth)
+library(bibliometrix)
+```
+
+
 ### Querries in Web of Science
 
 The first part consists in submit a query in Web of Science (WoS), selecting a sample from WoS with specific characteristics:
@@ -18,7 +25,7 @@ The first part consists in submit a query in Web of Science (WoS), selecting a s
 
 3.  Select single author papers from each region (LA, US and Canada, Europe and Asia)
 
-4.  For each paper download all the citations that each one received
+4.  For each paper download a sample from all the citations these single author papers received
 
 ### Selecting regions based on World Bank classification
 
@@ -33,7 +40,6 @@ names_MidleEastAfrica <- subset(countries, region_wb == "Middle East & North Afr
 names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
 names_SouthAsia <- subset(countries, region_wb == "South Asia")$admin
 names_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")$admin
-
 ```
 
 Now I create the queries which will be submitted to WoS. First I build a general string following the format of queries for WoS. To do so I 
@@ -53,7 +59,7 @@ With journal query pattern create then I can build the whole query by gluing cou
 
 ```{r}
   
-query_LA<- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_LA,  sep = ' OR '), ") AND ", journal_query)
+query_LA <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_LA,  sep = ' OR '), ") AND ", journal_query)
 query_NA <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_NA,  sep = ' OR '), ") AND ", journal_query)
 query_EU <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_EU,  sep = ' OR '), ") AND ", journal_query)
 query_MidleEastAfrica <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_MidleEastAfrica,  sep = ' OR '), ") AND ", journal_query)
@@ -73,9 +79,10 @@ We are gonna need some libraries to process the results from queries
 
 
 ```{r libs}
-library(bibliometrix)
+
 library(here)
 library(dplyr)
+library(tidyverse)
 library(magrittr)
 ```
 
@@ -98,7 +105,7 @@ We selected only single author paper to avoid confounding factors, e.g colaborat
 la_names <- toupper(names_LA) # Latin American country names
 s_paper_la <- unique(unlist(lapply(la_names, function(x) grep(x, M_single_LA$C1)))) # filtering by single author paper from LA 
 M_single_LA <- M_single_LA[s_paper_la, ] # unique single article papers from LA
-q_top_LA <- glue("UT = (", glue::glue_collapse(M_single_LA$UT,  sep = ' OR '), ")")
+q_top_LA <- glue::glue("UT = (", glue::glue_collapse(M_single_LA$UT,  sep = ' OR '), ")")
 
 ```
 
@@ -140,8 +147,7 @@ Since the query returns some single author papers from authors in which the affi
 usa_can_names <- toupper(names_NA) # Latin American country names
 s_paper_can_usa <- unique(unlist(lapply(usa_can_names, function(x) grep(x, M_single_USA_CAN$C1)))) # filtering by single author paper from LA 
 M_single_USA_CAN <- M_single_USA_CAN[s_paper_can_usa, ] # unique single article papers from LA
-q_top_USA_CAN <- glue("UT = (", glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR '), ")")
-
+q_top_USA_CAN <- glue::glue("UT = (", glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR '), ")")
 ```
 
 Most 10000 recent citations from top 235 single author papers from. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search
@@ -175,8 +181,7 @@ Now selecting single author papers
 eu_names <- toupper(names_EU)
 s_paper_eu <- unique(unlist(lapply(eu_names, function(x) grep(x, M_single_EU$C1)))) # filtering by single author paper from LA 
 M_single_EU <- M_single_EU[s_paper_eu, ] # unique single article papers from LA
-glue("UT = (", glue::glue_collapse(M_single_EU$UT,  sep = ' OR '), ")")
-q_top_EU <- glue("UT = (", glue::glue_collapse(M_single_EU$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
+q_top_EU <- glue::glue("UT = (", glue::glue_collapse(M_single_EU$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
 ```
 We used the previous querry to find the single article authors in WoS
 
@@ -194,7 +199,6 @@ tab_citation_EU <- data.frame(countries = names(countries_cite_EU),
 #### Queryng papers in Asian
 
 ```{r}
-query_EastAsia
 
 files <- here::here("data", "raw", "EastAsia_top1000.txt")
 M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
@@ -209,7 +213,7 @@ M_single_EastAsia <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), func
 eastasia_names <- toupper(names_EastAsia)
 s_paper_eastasia <- unique(unlist(lapply(eastasia_names, function(x) grep(x, M_single_EastAsia$C1)))) # filtering by single author paper from LA 
 M_single_EastAsia <- M_single_EastAsia[s_paper_eastasia, ] # unique single article papers from LA
-q_top_EastAsia <- glue("UT = (", glue::glue_collapse(M_single_EastAsia$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
+q_top_EastAsia <- glue::glue("UT = (", glue::glue_collapse(M_single_EastAsia$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
 ```
 
 ```{r}
@@ -238,9 +242,6 @@ tab_all_citation <-
 
 ```{r political_reg}
 library(ggplot2)
-library(tidyverse)
-library(sf)
-library(rnaturalearth)
 library(rnaturalearthdata)
 
 
@@ -253,10 +254,42 @@ tab_all_citation[tab_all_citation$countries %in% names_MidleEastAfrica, "contine
 tab_all_citation[tab_all_citation$countries %in% names_EastAsia, "continent"] <- "East Asia"
 tab_all_citation[tab_all_citation$countries %in% names_SouthAsia, "continent"] <- "South Asia"
 
+# manually fixing some classifications
+tab_all_citation[which(is.na(tab_all_citation$continent) == TRUE), "continent"] <- 
+  c("Middle East & Africa", "Middle East & Africa", "East Asia", "Other", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Europe")
+
+tab_all_citation[which(tab_all_citation$continent == "Malawi"), "continent"] <- "Middle East & Africa"
+
+
 ```
+
+
+Calculating all Pielo evenness values
+```{r}
+H_usa <- 
+diversity(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)], index = "shannon")
+
+H_la <- 
+diversity(tab_all_citation$LA.citation[!is.na(tab_all_citation$LA.citation)], index = "shannon")
+
+H_eu <- diversity(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citation)], index = "shannon")
+
+H_eastasia <- diversity(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)], index = "shannon")
+
+
+J_usa <- H_usa/log(length(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)]))
+
+J_la <- H_la/log(length(tab_all_citation$LA.citation[!is.na(tab_all_citation$LA.citation)]))
+
+J_eu <- H_eu/log(length(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citation)]))
+
+```
+
+
 
 ```{r plot}
 library(cowplot)
+library(vegan)
 
 usa_citation_plot <- 
 ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
@@ -267,10 +300,13 @@ ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
                width = 0.3,
                colour = "blue") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
-  ylab("Proportion of citations (USA-CAN)") +
+  ylab("Proportion of citations USA-CAN") +
   xlab("Region") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
+  annotate("text", x = 7, y = 1, 
+           label = glue::glue("italic(J)=={round(J_usa, 3)}"), 
+           parse = TRUE, size = 5)
 
 la_citation_plot <- 
 ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.prop)) +
@@ -284,7 +320,10 @@ ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.prop)) +
   xlab("Region") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
+  annotate("text", x = 7, y = 1, 
+           label = glue::glue("italic(J)=={round(J_la, 3)}"), 
+           parse = TRUE, size = 5)
 
 eu_citation_plot <- 
   ggplot(data = tab_all_citation, aes(x = continent, y = eu.citation.prop)) +
@@ -299,7 +338,10 @@ eu_citation_plot <-
   xlab("Region") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
+  annotate("text", x = 7, y = 1, 
+           label = glue::glue("italic(J)=={round(J_eu, 3)}"), 
+           parse = TRUE, size = 5)
 
 eastasia_citation_plot <- 
   ggplot(data = tab_all_citation, aes(x = continent, y = EastAsia.citation.prop)) +
@@ -314,31 +356,31 @@ eastasia_citation_plot <-
   xlab("Region") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1))
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
+  annotate("text", x = 7, y = 1, 
+           label = glue::glue("italic(J)=={round(J_estasia, 3)}"), 
+           parse = TRUE, size = 5)
 
 
-plot_grid(usa_citation_plot, la_citation_plot, eu_citation_plot, eastasia_citation_plot, ncol = 4)
-
-H_usa <- 
-diversity(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)], index = "shannon")
-
-H_la <- 
-diversity(tab_all_citation$LA.citation[!is.na(tab_all_citation$LA.citation)], index = "shannon")
-
-H_eu <- diversity(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citation)], index = "shannon")
-
-H_eastasia <- diversity(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)], index = "shannon")
+plot_all <- plot_grid(usa_citation_plot, la_citation_plot, eu_citation_plot, eastasia_citation_plot, ncol = 4)
 
 
-H_usa/log(length(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)]))
-
-H_la/log(length(tab_all_citation$LA.citation[!is.na(tab_all_citation$LA.citation)]))
-
-H_eu/log(length(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citation)]))
-
-H_eastasia/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)]))
+J_estasia <- H_eastasia/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)]))
 
 
 ```
+
+saving plot
+
+```{r}
+
+ggsave(filename = here::here("output", "Fig1_citation_all.png"), 
+       plot = plot_all, 
+       width = 15, 
+       height = 8, 
+       dpi = 300)
+```
+
+
 
 
