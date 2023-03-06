@@ -9,15 +9,193 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Reading required data and libraries
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+All libraries needed to run the analysis 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+library(here)
+library(dplyr)
+library(tidyverse)
+library(magrittr)
+library(bibliometrix)
+library(rnaturalearth)
 ```
+
+Reading all files containing the top 1000 articles selected based on the address location of the first author
+
+```{r}
+files_LA <- here::here("data", "raw", "LA_top1000.txt")
+M_LA <- convert2df(file = files_LA, dbsource = 'wos', format = "plaintext")
+files_US <- here::here("data", "raw", "USA_CAN_top1000.txt")
+M_US <- convert2df(file = files_US, dbsource = 'wos', format = "plaintext")
+files_EU <- here::here("data", "raw", "EU_top1000.txt")
+M_EU <- convert2df(file = files_EU, dbsource = 'wos', format = "plaintext")
+files_EA <- here::here("data", "raw", "EastAsia_top1000.txt")
+M_EA <- convert2df(file = files_EA, dbsource = 'wos', format = "plaintext")
+files_Africa <- here::here("data", "raw", "Africa_top1000.txt")
+M_Africa <- convert2df(file = files_Africa, dbsource = 'wos', format = "plaintext")
+files_sa <- here::here("data", "raw", "SouthAsia_top1000.txt")
+M_sa <- convert2df(file = files_sa, dbsource = 'wos', format = "plaintext")
+files_NAfrica <- here::here("data", "raw", "NorthAfrica_top1000.txt")
+M_NAfrica <- convert2df(file = files_NAfrica, dbsource = 'wos', format = "plaintext")
+
+
+```
+# Calculating the number of geo markers
+
+Here I calculate the number of [geographical markers](https://www.sciencedirect.com/science/article/abs/pii/S0016718519301551) per country for each one of the groups defined in the previous section.
+
+First I defined the countries in each political region based on the classification contained in {`rnaturalearth`} package. This classification is based on the classification made by the World Bank (column `region_wb`). I selected all the names of the countries in each region and separate spatial objects for each
+
+```{r}
+countries <- ne_countries(scale = "medium", returnclass = "sf")
+names_LA <- subset(countries, region_wb == "Latin America & Caribbean")$admin
+sf_la <- subset(countries, region_wb == "Latin America & Caribbean")[, c("admin", "region_wb", "geometry")]
+names_NA <- subset(countries, region_wb == "North America")$admin
+names_NA <- c(names_NA, "USA", "Usa", "United States")
+sf_na <- subset(countries, region_wb == "North America")[, c("admin", "region_wb", "geometry")]
+names_EU <- subset(countries, region_wb == "Europe & Central Asia")$admin
+names_EU <- c(names_EU, "England", "Scotland", "Wales", "UK")
+sf_eu <- subset(countries, region_wb == "Europe & Central Asia")[, c("admin", "region_wb", "geometry")]
+names_MidleEastAfrica <- subset(countries, region_wb == "Middle East & North Africa")$admin
+sf_africa <- subset(countries, region_wb == "Middle East & North Africa")[, c("admin", "region_wb", "geometry")]
+names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
+sf_asia <- subset(countries, region_wb == "East Asia & Pacific")[, c("admin", "region_wb", "geometry")]
+names_SouthAsia <- subset(countries, region_wb == "South Asia")$admin
+sf_southAsia <- subset(countries, region_wb == "South Asia")[, c("admin", "region_wb", "geometry")]
+names_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")$admin
+sf_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")[, c("admin", "region_wb", "geometry")]
+names_NAfrica <- subset(countries, region_wb == "Middle East & North Africa")$admin
+sf_NAfrica <- subset(countries, region_wb == "Middle East & North Africa")[, c("admin", "region_wb", "geometry")]
+```
+
+I've made some minor manual complements to add names that are from some region but were not present in the rnaturalearth database
+
+Here I calculated the number of geographical markers for each country in each regionf for all top 1000 cited papers.
+
+```{r}
+# Europe
+geo_eu <- lapply(toupper(names_EU), function(x) grep(x, M_EU$TI, fixed = T))
+count_geo_eu <- lapply(geo_eu, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_eu) <- names_EU
+count_geo_eu <- unlist(count_geo_eu)
+
+# Latin America
+
+geo_la <- lapply(toupper(names_LA), function(x) grep(x, M_LA$TI, fixed = T))
+count_geo_la <- lapply(geo_la, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_la) <- names_LA
+count_geo_la <- unlist(count_geo_la)
+
+# North America
+
+geo_us <- lapply(toupper(names_NA), function(x) grep(x, M_US$TI, fixed = T))
+count_geo_us <- lapply(geo_us, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_us) <- names_NA
+count_geo_us <- unlist(count_geo_us)
+
+# East Asia
+
+geo_ea <- lapply(toupper(names_EastAsia), function(x) grep(x, M_EA$TI, fixed = T))
+count_geo_ea <- lapply(geo_ea, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_ea) <- names_EastAsia
+count_geo_ea <- unlist(count_geo_ea)
+
+# Africa - Need to download data
+geo_africa <- lapply(toupper(names_SubSahara), function(x) grep(x, M_Africa$TI, fixed = T))
+count_geo_africa <- lapply(geo_africa, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_africa) <- names_SubSahara
+count_geo_africa <- unlist(count_geo_africa)
+
+# South Asia
+geo_sa <- lapply(toupper(names_SouthAsia), function(x) grep(x, M_sa$TI, fixed = T))
+M_sa[unlist(geo_sa), "TI"]
+count_geo_sa <- lapply(geo_sa, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_sa) <- names_SouthAsia
+count_geo_sa <- unlist(count_geo_sa)
+
+# North Africa
+geo_NAfrica <- lapply(toupper(names_NAfrica), function(x) grep(x, M_NAfrica$TI, fixed = T))
+count_geo_NAfrica <- lapply(geo_NAfrica, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_NAfrica) <- names_NAfrica
+count_geo_NAfrica <- unlist(count_geo_NAfrica)
+
+
+```
+
+# joining geographical markers count with spatial tables
+
+```{r}
+
+countries <- st_transform(countries, crs = "+proj=robin")
+
+df_count_la <- data.frame(admin = names(count_geo_la), count = as.numeric(count_geo_la))
+sf_count_la <- 
+  sf_la %>% 
+  right_join(df_count_la, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+
+df_count_us <- data.frame(admin = names(count_geo_us), count = as.numeric(count_geo_us))
+US <- sum(count_geo_us[5:7])
+df_count_us[4, "count"] <- US
+df_count_us1 <- df_count_us[-c(5:7), ] 
+sf_count_us <- 
+  sf_na %>% 
+  right_join(df_count_us1, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+
+df_count_asia <- data.frame(admin = names(count_geo_ea), count = as.numeric(count_geo_ea))
+sf_count_ea <- 
+  sf_asia %>% 
+  right_join(df_count_asia, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+
+df_count_eu <- data.frame(admin = names(count_geo_eu), count = as.numeric(count_geo_eu))
+UK <- c("England", "Scotland", "Wales", "UK")
+UK_sum <- sum(df_count_eu[match(UK, df_count_eu$admin), "count"])
+df_count_eu[which(df_count_eu$admin == "United Kingdom"), "count"] <- UK_sum
+df_count_eu1 <- df_count_eu[-match(UK, df_count_eu$admin), ] 
+sf_count_eu <- 
+  sf_eu %>% 
+  right_join(df_count_eu1, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+  
+df_count_africa <- data.frame(admin = names(count_geo_africa), count = as.numeric(count_geo_africa))
+sf_count_africa <- 
+  sf_SubSahara %>% 
+  right_join(df_count_africa, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+
+df_count_sa <- data.frame(admin = names(count_geo_sa), count = as.numeric(count_geo_sa))
+sf_count_sa <- 
+  sf_southAsia %>% 
+  right_join(df_count_sa, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+
+df_count_NAfrica <- data.frame(admin = names(count_geo_NAfrica), count = as.numeric(count_geo_NAfrica))
+sf_count_NAfrica <- 
+  sf_NAfrica %>% 
+  right_join(df_count_NAfrica, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+
+
+
+ggplot() +
+  geom_sf(data = countries) +
+  geom_sf(data = sf_count_la, aes(fill = count)) +
+  geom_sf(data = sf_count_us, aes(fill = count)) +
+  geom_sf(data = sf_count_ea, aes(fill = count)) +
+  geom_sf(data = sf_count_eu, aes(fill = count)) +
+  geom_sf(data = sf_count_africa, aes(fill = count)) +
+  geom_sf(data = sf_count_sa, aes(fill = count)) +
+  geom_sf(data = sf_count_NAfrica, aes(fill = count))
+
+
+
+```
+
+
 
 ## Including Plots
 

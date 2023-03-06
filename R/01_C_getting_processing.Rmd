@@ -40,6 +40,7 @@ names_MidleEastAfrica <- subset(countries, region_wb == "Middle East & North Afr
 names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
 names_SouthAsia <- subset(countries, region_wb == "South Asia")$admin
 names_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")$admin
+
 ```
 
 Now I create the queries which will be submitted to WoS. First I build a general string following the format of queries for WoS. To do so I 
@@ -69,8 +70,7 @@ query_SubSahara <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_colla
 
 ```
 
-To replicate the same searches in WoS you only need to run one of the queries, copy the string vector printed in your console and paste it on 
-    search field in WoS
+To replicate the same searches in WoS you only need to run one of the queries, copy the string vector printed in your console and paste it on search field in WoS. The search must be performed using *Web of Science Core collection*. *Download plain text file format*
 
 ### Processing queries
 
