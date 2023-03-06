@@ -283,6 +283,9 @@ J_la <- H_la/log(length(tab_all_citation$LA.citation[!is.na(tab_all_citation$LA.
 
 J_eu <- H_eu/log(length(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citation)]))
 
+J_east_asia <- H_eu/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)]))
+
+
 ```
 
 
@@ -304,7 +307,7 @@ ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
   xlab("Region") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 7, y = 1, 
+  annotate("text", x = 6, y = 1, 
            label = glue::glue("italic(J)=={round(J_usa, 3)}"), 
            parse = TRUE, size = 5)
 
@@ -321,7 +324,7 @@ ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.prop)) +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 7, y = 1, 
+  annotate("text", x = 6, y = 1, 
            label = glue::glue("italic(J)=={round(J_la, 3)}"), 
            parse = TRUE, size = 5)
 
@@ -339,7 +342,7 @@ eu_citation_plot <-
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 7, y = 1, 
+  annotate("text", x = 6, y = 1, 
            label = glue::glue("italic(J)=={round(J_eu, 3)}"), 
            parse = TRUE, size = 5)
 
@@ -357,15 +360,12 @@ eastasia_citation_plot <-
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 7, y = 1, 
-           label = glue::glue("italic(J)=={round(J_estasia, 3)}"), 
+  annotate("text", x = 6, y = 1, 
+           label = glue::glue("italic(J)=={round(J_east_asia, 3)}"), 
            parse = TRUE, size = 5)
 
 
 plot_all <- plot_grid(usa_citation_plot, la_citation_plot, eu_citation_plot, eastasia_citation_plot, ncol = 4)
-
-
-J_estasia <- H_eastasia/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)]))
 
 
 ```
