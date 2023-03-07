@@ -242,8 +242,7 @@ tab_all_citation <-
 
 ```{r political_reg}
 library(ggplot2)
-library(rnaturalearthdata)
-
+library(vegan)
 
 tab_all_citation$continent <- NA
 tab_all_citation$countries <- str_to_title(tab_all_citation$countries)
@@ -264,7 +263,8 @@ tab_all_citation[which(tab_all_citation$continent == "Malawi"), "continent"] <- 
 ```
 
 
-Calculating all Pielo evenness values
+Calculating all Pielou evenness values
+
 ```{r}
 H_usa <- 
 diversity(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)], index = "shannon")
@@ -292,7 +292,6 @@ J_east_asia <- H_eu/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all
 
 ```{r plot}
 library(cowplot)
-library(vegan)
 
 usa_citation_plot <- 
 ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
@@ -303,8 +302,8 @@ ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
                width = 0.3,
                colour = "blue") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
-  ylab("Proportion of citations USA-CAN") +
-  xlab("Region") +
+  ylab("Proportion citations USA-CAN") +
+  xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
   annotate("text", x = 6, y = 1, 
@@ -319,8 +318,8 @@ ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.prop)) +
                geom = "crossbar", 
                width = 0.3,
                colour = "blue") +
-  ylab("Proportion of citations LA") +
-  xlab("Region") +
+  ylab("Proportion citations LA") +
+  xlab("") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
@@ -337,8 +336,8 @@ eu_citation_plot <-
                geom = "crossbar", 
                width = 0.3,
                colour = "blue") +
-  ylab("Proportion of citations EU") +
-  xlab("Region") +
+  ylab("Proportion citations EU") +
+  xlab("") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
@@ -355,8 +354,8 @@ eastasia_citation_plot <-
                geom = "crossbar", 
                width = 0.3,
                colour = "blue") +
-  ylab("Proportion of citations East Asia") +
-  xlab("Region") +
+  ylab("Proportion citations East Asia") +
+  xlab("") +
   scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
@@ -365,8 +364,7 @@ eastasia_citation_plot <-
            parse = TRUE, size = 5)
 
 
-plot_all <- plot_grid(usa_citation_plot, la_citation_plot, eu_citation_plot, eastasia_citation_plot, ncol = 4)
-
+plot_all <- usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_citation_plot
 
 ```
 
