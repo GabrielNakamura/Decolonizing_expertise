@@ -20,6 +20,7 @@ library(tidyverse)
 library(magrittr)
 library(bibliometrix)
 library(rnaturalearth)
+library(ggplot2)
 ```
 
 Reading all files containing the top 1000 articles selected based on the address location of the first author
