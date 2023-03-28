@@ -368,7 +368,7 @@ plot_all <- usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_c
 
 ```
 
-saving plot
+saving plot that goes in the main text 
 
 ```{r}
 
@@ -379,6 +379,25 @@ ggsave(filename = here::here("output", "Fig1_citation_all.png"),
        dpi = 300)
 ```
 
+
+
+saving tables with all citation values and proportions
+
+```{r}
+saveRDS(object = tab_all_citation, file = here::here("data", "processed", "tab_all_citation.rds"))
+```
+
+
+
+Trying some different ways to present the data on citation bias. Barplots bellow
+
+```{r}
+
+tab_all_citation <- readRDS(here::here("data", "processed", "tab_all_citation.rds"))
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = usa.citation.prop), position = "dodge", stat = "identity") +
+  theme(legend.position = "none")
+```
 
 
 
