@@ -394,9 +394,36 @@ Trying some different ways to present the data on citation bias. Barplots bellow
 ```{r}
 
 tab_all_citation <- readRDS(here::here("data", "processed", "tab_all_citation.rds"))
+tab_all_citation <- tab_all_citation[-which(tab_all_citation$continent == "Other"), ]
+usa_citation_plot <- 
 ggplot() +
   geom_bar(data = tab_all_citation, aes(x = continent, y = usa.citation.prop), position = "dodge", stat = "identity") +
-  theme(legend.position = "none")
+  ylim(0, 0.5) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+la_citation_plot <- 
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = LA.citation.prop), position = "dodge", stat = "identity") +
+  ylim(0, 0.5) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+eu_citation_plot <- 
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = eu.citation.prop), position = "dodge", stat = "identity") +
+  ylim(0, 0.5) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+eastasia_citation_plot <- 
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = EastAsia.citation.prop), position = "dodge", stat = "identity") +
+  ylim(0, 0.5) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+
+table(tab_all_citation$continent)
+
+usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_citation_plot
+
 ```
 
 

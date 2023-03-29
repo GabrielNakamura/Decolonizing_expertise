@@ -195,10 +195,30 @@ Making maps, two options, one coloring only World bank regions and another all c
 map_markers_wb <-
   ggplot() +
   geom_sf(data = sf_mean, aes(fill = sum_count)) +
-  rcartocolor::scale_fill_carto_c(palette = "DarkMint") +
-  labs(fill = "Total Geo Markers") +
-  theme(panel.background = element_rect(fill = "transparent"), 
-        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"))
+  rcartocolor::scale_fill_carto_c(palette = "DarkMint",
+                                  direction = 1,
+                                  limits = c(10, 300),  ## max percent overall
+                                  breaks = seq(10, 300, by = 50),
+                                  labels = glue::glue("{seq(10, 300, by = 50)}")) +
+  guides(fill = guide_colorbar(barheight = unit(3, units = "mm"),
+                               barwidth = unit(50, units = "mm"),
+                               direction = "horizontal",
+                               ticks.colour = "grey20",
+                               title.position = "top",
+                               label.position = "bottom",
+                               title.hjust = 0.5)) +
+  labs(fill = "Total Markers") +
+  xlab("") +
+  ylab("") +
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        legend.text = element_text(family = "Times", color = "black", size = 10),
+        axis.text = element_blank(),
+        axis.ticks.x.bottom = element_blank(),
+        panel.border = element_blank(),
+        plot.subtitle = element_blank())
+  
 
 map_all_countries <- 
 ggplot() +
