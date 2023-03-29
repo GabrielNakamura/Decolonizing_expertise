@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 library(sf)
 library(rnaturalearth)
 library(bibliometrix)
+library(vegan)
 ```
 
 
@@ -368,7 +369,67 @@ plot_all <- usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_c
 
 ```
 
-saving plot that goes in the main text 
+Trying some different ways to present the data on citation bias. Barplots bellow
+
+```{r}
+
+tab_all_citation <- readRDS(here::here("data", "processed", "tab_all_citation.rds"))
+tab_all_citation <- tab_all_citation[-which(tab_all_citation$continent == "Other"), ]
+usa_citation_plot <- 
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = usa.citation.prop), position = "dodge", stat = "identity") +
+  ylim(0, 0.5) +
+  ylab("Proportion citations USA-CAN") +
+  xlab("") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
+  annotate("text", x = 6, y = 0.5, 
+           label = glue::glue("italic(J)=={round(J_usa, 3)}"), 
+           parse = TRUE, size = 5)
+  
+la_citation_plot <- 
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = LA.citation.prop), position = "dodge", stat = "identity") +
+  ylim(0, 0.5) +
+  ylab("Proportion citations LA") +
+  xlab("") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
+  annotate("text", x = 6, y = 0.5, 
+           label = glue::glue("italic(J)=={round(J_la, 3)}"), 
+           parse = TRUE, size = 5)
+
+eu_citation_plot <- 
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = eu.citation.prop), position = "dodge", stat = "identity") +
+  ylim(0, 0.5) +
+  ylab("Proportion citations EU") +
+  xlab("") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
+  annotate("text", x = 6, y = 0.5, 
+           label = glue::glue("italic(J)=={round(J_eu, 3)}"), 
+           parse = TRUE, size = 5)
+
+eastasia_citation_plot <- 
+ggplot() +
+  geom_bar(data = tab_all_citation, aes(x = continent, y = EastAsia.citation.prop), position = "dodge", stat = "identity") +
+  ylim(0, 0.5) +
+  ylab("Proportion citations East Asia") +
+  xlab("") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
+  annotate("text", x = 6, y = 0.5, 
+           label = glue::glue("italic(J)=={round(J_east_asia, 3)}"), 
+           parse = TRUE, size = 5)
+
+plot_all <- usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_citation_plot
+
+```
+
+
+
+Saving plot that goes in the main text 
 
 ```{r}
 
@@ -381,7 +442,7 @@ ggsave(filename = here::here("output", "Fig1_citation_all.png"),
 
 
 
-saving tables with all citation values and proportions
+Saving tables with all citation values and proportions
 
 ```{r}
 saveRDS(object = tab_all_citation, file = here::here("data", "processed", "tab_all_citation.rds"))
@@ -389,42 +450,7 @@ saveRDS(object = tab_all_citation, file = here::here("data", "processed", "tab_a
 
 
 
-Trying some different ways to present the data on citation bias. Barplots bellow
 
-```{r}
-
-tab_all_citation <- readRDS(here::here("data", "processed", "tab_all_citation.rds"))
-tab_all_citation <- tab_all_citation[-which(tab_all_citation$continent == "Other"), ]
-usa_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = usa.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
-
-la_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = LA.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
-
-eu_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = eu.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
-
-eastasia_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = EastAsia.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
-
-
-table(tab_all_citation$continent)
-
-usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_citation_plot
-
-```
 
 
 
