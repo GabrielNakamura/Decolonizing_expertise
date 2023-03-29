@@ -241,7 +241,7 @@ Joining plots - citation and geo markers
 ```{r}
 library(patchwork)
 plot_cit_geoMark <- 
-plot_all / map_markers_wb +
+map_markers_wb / plot_all  +
   patchwork::plot_annotation(tag_levels = "A")
 
 ```
@@ -256,6 +256,6 @@ ggplot2::ggsave(filename = here::here("output", "Fig1_cit_geoMark.png"), plot = 
 
 ```
 
-ggplot2::ggsave(filename = here::here())
+
 
 

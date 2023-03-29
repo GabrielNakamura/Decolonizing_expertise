@@ -383,7 +383,7 @@ ggplot() +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 6, y = 0.5, 
+  annotate("text", x = 5.7, y = 0.5, 
            label = glue::glue("italic(J)=={round(J_usa, 3)}"), 
            parse = TRUE, size = 5)
   
@@ -395,7 +395,7 @@ ggplot() +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 6, y = 0.5, 
+  annotate("text", x = 5.7, y = 0.5, 
            label = glue::glue("italic(J)=={round(J_la, 3)}"), 
            parse = TRUE, size = 5)
 
@@ -407,7 +407,7 @@ ggplot() +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 6, y = 0.5, 
+  annotate("text", x = 5.7, y = 0.5, 
            label = glue::glue("italic(J)=={round(J_eu, 3)}"), 
            parse = TRUE, size = 5)
 
@@ -419,7 +419,7 @@ ggplot() +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 6, y = 0.5, 
+  annotate("text", x = 5.7, y = 0.5, 
            label = glue::glue("italic(J)=={round(J_east_asia, 3)}"), 
            parse = TRUE, size = 5)
 
