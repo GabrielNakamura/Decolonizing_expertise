@@ -1,6 +1,3 @@
-####mkaing some modifications#
-#Sasha Colby will be the winner of Rupaul's Drag Race Season 15#
-
 
 # reading libraries  ------------------------------------------------------
 

@@ -46,7 +46,7 @@ names_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")$admin
 
 Now I create the queries which will be submitted to WoS. First I build a general string following the format of queries for WoS. To do so I 
     subset the journals in which I want to perform my search and then glue them with the boolean characters and countries of 
-    each region (accordinglyWorld Bank classification). In case of wanting to change the journal subset the user only need to change the `journal_sub` vector with different journal names.
+    each region (accordinglyWorld Bank classification). In order to change the journal subset in which the query will be performed just change the `journal_sub` vector with different journal names. The journal names must be all upper case letters.
 
 ```{r queries_journal}
 library(glue)
@@ -57,9 +57,9 @@ journal_query <- glue::glue('(SO == ("{(v)}"))', v = glue_collapse(journal_sub, 
 
 ```
 
-With journal query pattern create then I can build the whole query by gluing country and journal
+With journal query pattern created I can build the whole query by gluing country and journal names. Each quey correspond to a defined region. We used, [World Bank regions](https://data.worldbank.org/country) to classify the countries. We also selected **Ecology** as the Web of Science category to perform the search (WC tag). For a complete list of tags see [Web of Science Core Collection help section](https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html) 
 
-```{r}
+```{r glueJouCont}
   
 query_LA <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_LA,  sep = ' OR '), ") AND ", journal_query)
 query_NA <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_collapse(names_NA,  sep = ' OR '), ") AND ", journal_query)
@@ -71,10 +71,13 @@ query_SubSahara <- glue("WC =", "Ecology ", " AND ", " CU = (", glue::glue_colla
 
 ```
 
-To replicate the same searches in WoS you only need to run one of the queries, copy the string vector printed in your console and paste it on search field in WoS. The search must be performed using *Web of Science Core collection*. *Download plain text file format*
+To replicate the same searches in WoS you only need to run one of the queries, copy the string vector printed in your console and paste it on search field in WoS. The search must be performed using *Web of Science Core collection* in the field **advanced search**. 
+
+I ordered the search by the number of citation, with the most cited articles showing first. This is an important step since I used only the top cited articles of each region in downstream analysis.
+
+The document downloaded to be used in downstream analysis must be the one under the name **Download plain text file format**. This is important since the plain text file format is the format used in Bibliometrix package.
 
 ### Processing queries
-
 
 We are gonna need some libraries to process the results from queries
 
@@ -88,7 +91,9 @@ library(magrittr)
 ```
 
 The query was downloaded from WoS as a plain text. I downloaded the full record plain text file. Each file with query results are in the 
-    format `REGION_top1000.txt`. All can be found in `data/raw` folder of this repository. I read the data and converted it to bibliometrix format. 
+    format `REGION_top1000.txt`. All can be found in `data/raw` folder of this repository.
+
+Now I can read the data and convert it to Bibliometrix format. I performed the conversions for each region.
     
 #### LA processing
 
@@ -99,7 +104,7 @@ results_LA <- biblioAnalysis(M, sep = ";")
 M_single_LA <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
 ```
 
-We selected only single author paper to avoid confounding factors, e.g colaborations, number of co-authors, correspondence author from region  nor corresponding to the search etc. Since the query returns some single author papers from authors in which the affiliation does not correspond to a LA countries I applied a second filter to detect only author's affiliations containing at least one Latin American country
+We selected only single author paper (`M_single_LA`) to avoid confounding factors, e.g collaborations, number of co-authors, correspondence author from region  nor corresponding to the search etc. Since the query returns some single author papers from authors in which the affiliation does not correspond to a LA countries I applied a second filter to detect only author's affiliations containing at least one Latin American country. Sometimes the author has more than one affiliation. In these cases, if at least one of the affiliation correspond to a institution in a LA country this work is considered for further analysis.
 
 ```{r filter_la1}
 
@@ -111,11 +116,11 @@ q_top_LA <- glue::glue("UT = (", glue::glue_collapse(M_single_LA$UT,  sep = ' OR
 ```
 
 We used the identifier obtained in the last step to submit a query in WoS. I re-ordered the results from the query to show
-    first the most cited papers that cited the single author papers. Again, I downloaded plain text files for the first 5000 articles
-    citing the top 1000 single author articles from LA
+    the most cited papers that cited the top single author papers. Again, I downloaded plain text files for the first 5000 articles
+    citing the top 1000 single author articles from LA. These articles can be found in `data/processed/LA_citing_articles` folder.
 
 
-Reading the 5000 articles that cited LA papers
+Here I read the 5000 articles that cited LA papers and accessed the countries in which the citations comes from (corresponding author countries). this information was stored in a data frame containing the absolute number of citations per country and the proportional value
 
 ```{r}
 files <- here::here("data", "processed", "LA_citing_articles", c("01_citing_LA.txt", "02_citing_LA.txt", "03_citing_LA.txt",  "04_citing_LA.txt",  "05_citing_LA.txt"))
@@ -151,7 +156,7 @@ M_single_USA_CAN <- M_single_USA_CAN[s_paper_can_usa, ] # unique single article 
 q_top_USA_CAN <- glue::glue("UT = (", glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR '), ")")
 ```
 
-Most 10000 recent citations from top 235 single author papers from. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search
+Most 10000 recent citations from top 235 single author papers from. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search. This is the same procedure I performed above for LA region
 
 ```{r}
 files <- here::here("data", "processed", "USA_CAN_citing_articles", c("01_citing_USA_CAN.txt", "02_citing_USA_CAN.txt", "03_citing_USA_CAN.txt", "04_citing_USA_CAN.txt", "05_citing_USA_CAN.txt", "06_citing_USA_CAN.txt", "07_citing_USA_CAN.txt", "08_citing_USA_CAN.txt", "09_citing_USA_CAN.txt", "10_citing_USA_CAN.txt"))
@@ -165,7 +170,7 @@ tab_citation_USA <- data.frame(countries = names(countries_cite_USA),
 ```
 #### Querryng papers in europe
 
-Using the query for EU countries
+Using the query for EU countries and reading the top 1000 most cited papers from that region
 
 
 ```{r}
@@ -184,7 +189,8 @@ s_paper_eu <- unique(unlist(lapply(eu_names, function(x) grep(x, M_single_EU$C1)
 M_single_EU <- M_single_EU[s_paper_eu, ] # unique single article papers from LA
 q_top_EU <- glue::glue("UT = (", glue::glue_collapse(M_single_EU$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
 ```
-We used the previous querry to find the single article authors in WoS
+
+We used the previous querry to find the single article authors in WoS and downloaded the information of the 10000 papers citing EU single author papers
 
 ```{r}
 files <- here::here("data", "processed", "EU_citing_articles", c("01_citing_EU.txt", "02_citing_EU.txt", "03_citing_EU.txt", "04_citing_EU.txt", "05_citing_EU.txt", "06_citing_EU.txt", "07_citing_EU.txt", "08_citing_EU.txt", "09_citing_EU.txt", "10_citing_EU.txt"))
@@ -208,7 +214,7 @@ M_single_EastAsia <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), func
 
 ```
 
-
+Same procedure here. We extracted the top single author papers from East Asia region and obtained their ID to find the papers that cited these works
 
 ```{r}
 eastasia_names <- toupper(names_EastAsia)
@@ -216,6 +222,8 @@ s_paper_eastasia <- unique(unlist(lapply(eastasia_names, function(x) grep(x, M_s
 M_single_EastAsia <- M_single_EastAsia[s_paper_eastasia, ] # unique single article papers from LA
 q_top_EastAsia <- glue::glue("UT = (", glue::glue_collapse(M_single_EastAsia$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
 ```
+
+Finally, I downloaded the information for 7000 studies that cited the top single author papers in East Asia
 
 ```{r}
 files <- here::here("data", "processed", "EastAsia_citing_articles", c("01_citing_EastAsia.txt", "02_citing_EastAsia.txt", "03_citing_EastAsia.txt", "04_citing_EastAsia.txt", "05_citing_EastAsia.txt", "06_citing_EastAsia.txt", "07_citing_EastAsia.txt"))
@@ -228,7 +236,38 @@ tab_citation_EastAsia <- data.frame(countries = names(countries_cite_EastAsia),
                               EastAsia.citation.prop = as.vector(prop_countries_cite_EastAsia))
 ```
 
+#### Queryng papers for Midle East Africa
 
+```{r}
+
+files <- here::here("data", "raw", "MiddleEastAfrica_top1000.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_MiddleEastAfrica <- biblioAnalysis(M, sep = ";")
+M_single_MiddleEastAfrica <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+
+```
+
+Now selecting single author papers
+
+```{r}
+midleafrica_names <- toupper(names_MidleEastAfrica)
+s_paper_midleafrica <- unique(unlist(lapply(midleafrica_names, function(x) grep(x, M_single_MiddleEastAfrica$C1)))) # filtering by single author paper from Middle and east africa
+M_single_MiddleEastAfrica <- M_single_MiddleEastAfrica[s_paper_midleafrica, ] # unique single article papers from LA
+q_top_MiddleAfrica <- glue::glue("UT = (", glue::glue_collapse(M_single_MiddleEastAfrica$UT,  sep = ' OR '), ")") # query for LA single-author paper 
+```
+
+We used the previous query to find the single article authors in WoS and downloaded the information of the ~4000 papers citing East Middle Africa single author papers
+
+```{r}
+files <- here::here("data", "processed", "MiddleEastAfrica_citing_articles", c("01_citing_MAfrica.txt", "02_citing_MAfrica.txt", "03_citing_MAfrica.txt", "04_citing_MAfrica.txt"))
+M_citations_MiddleAfrica <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
+results_citation_MiddleAfrica <- biblioAnalysis(M_citations_MiddleAfrica, sep = ";")
+countries_cite_MiddleAfrica <- results_citation_MiddleAfrica$Countries[order(results_citation_MiddleAfrica$Countries, decreasing = TRUE)]
+prop_countries_cite_MiddleAfrica <- (countries_cite_MiddleAfrica)/sum(countries_cite_MiddleAfrica)
+tab_citation_MiddleAfrica <- data.frame(countries = names(countries_cite_MiddleAfrica), 
+                              middle.citation = as.vector(countries_cite_MiddleAfrica), 
+                              eu.citation.prop = as.vector(prop_countries_cite_MiddleAfrica))
+```
 
 ### Binding the tables and plotting the results
 
@@ -237,9 +276,11 @@ tab_all_citation <-
   tab_citation_USA %>% 
   right_join(tab_citation_LA, by = "countries") %>% 
   right_join(tab_citation_EU, by = "countries")  %>% 
-  right_join(tab_citation_EastAsia, by = "countries")
+  right_join(tab_citation_EastAsia, by = "countries") %>% 
+  right_join(tab_citation_MiddleAfrica, by = "countries")
 ```
 
+# Citation bias analysis 
 
 ```{r political_reg}
 library(ggplot2)
@@ -262,9 +303,9 @@ tab_all_citation[which(tab_all_citation$continent == "Malawi"), "continent"] <- 
 
 
 ```
+### citation bias
 
-
-Calculating all Pielou evenness values
+We used the Pielou evenness index to express the degree of citation bias. Lower values indicate that citation are more biased towards certain regions/countries. Higher values indicate that the citations are more evenly distributed throught different countries.
 
 ```{r}
 H_usa <- 
@@ -289,7 +330,7 @@ J_east_asia <- H_eu/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all
 
 ```
 
-
+### plotting citation proportion
 
 ```{r plot}
 library(cowplot)
@@ -419,7 +460,7 @@ ggplot() +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 5.3, y = 0.5, 
+  annotate("text", x = 5, y = 0.5, 
            label = glue::glue("italic(J)=={round(J_east_asia, 3)}"), 
            parse = TRUE, size = 5)
 
