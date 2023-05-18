@@ -203,7 +203,7 @@ tab_citation_EU <- data.frame(countries = names(countries_cite_EU),
                               eu.citation.prop = as.vector(prop_countries_cite_EU))
 ```
 
-#### Queryng papers in Asian
+#### Queryng papers for Asia
 
 ```{r}
 
@@ -268,6 +268,41 @@ tab_citation_MiddleAfrica <- data.frame(countries = names(countries_cite_MiddleA
                               middle.citation = as.vector(countries_cite_MiddleAfrica), 
                               eu.citation.prop = as.vector(prop_countries_cite_MiddleAfrica))
 ```
+#### Queryng papers for Sub-sahara region
+
+```{r}
+
+files <- here::here("data", "raw", "SubSahara_top1000.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_SubSahara <- biblioAnalysis(M, sep = ";")
+M_single_SubSahara <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+
+```
+
+Now selecting single author papers
+
+```{r}
+subsahara_names <- toupper(names_SubSahara)
+s_paper_subsahara <- unique(unlist(lapply(subsahara_names, function(x) grep(x, M_single_SubSahara$C1)))) # filtering by single author paper from Middle and east africa
+M_single_SubSahara <- M_single_SubSahara[s_paper_subsahara, ] # unique single article papers from LA
+q_top_subsahara <- glue::glue("UT = (", glue::glue_collapse(M_single_SubSahara$UT,  sep = ' OR '), ")") # query for LA single-author paper 
+```
+
+We used the previous query to find the single article authors in WoS and downloaded the information of the ~4000 papers citing East Middle Africa single author papers
+
+```{r}
+files <- here::here("data", "processed", "MiddleEastAfrica_citing_articles", c("01_citing_MAfrica.txt", "02_citing_MAfrica.txt", "03_citing_MAfrica.txt", "04_citing_MAfrica.txt"))
+M_citations_MiddleAfrica <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
+results_citation_MiddleAfrica <- biblioAnalysis(M_citations_MiddleAfrica, sep = ";")
+countries_cite_MiddleAfrica <- results_citation_MiddleAfrica$Countries[order(results_citation_MiddleAfrica$Countries, decreasing = TRUE)]
+prop_countries_cite_MiddleAfrica <- (countries_cite_MiddleAfrica)/sum(countries_cite_MiddleAfrica)
+tab_citation_MiddleAfrica <- data.frame(countries = names(countries_cite_MiddleAfrica), 
+                              middle.citation = as.vector(countries_cite_MiddleAfrica), 
+                              eu.citation.prop = as.vector(prop_countries_cite_MiddleAfrica))
+```
+
+
+
 
 ### Binding the tables and plotting the results
 

@@ -37,3 +37,6 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Word documents 
+doc/Response_letter_MS_Decolonizing-expertise.docx
