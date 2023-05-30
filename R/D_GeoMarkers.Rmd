@@ -24,7 +24,7 @@ library(rnaturalearth)
 library(ggplot2)
 ```
 
-Reading all files containing the top 1000 articles selected based on the address location of the first author
+Reading all files containing the top 1000 articles selected based on the address location of the corresponding author
 
 ```{r}
 files_LA <- here::here("data", "raw", "LA_top1000.txt")
@@ -126,7 +126,12 @@ count_geo_NAfrica <- unlist(count_geo_NAfrica)
 
 ```
 
-# joining geographical markers count with spatial tables
+
+# Calculating the number of zoogeographical markers 
+
+
+
+# Joining geographical markers count with spatial tables
 
 ```{r}
 

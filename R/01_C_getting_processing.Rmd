@@ -291,16 +291,30 @@ q_top_subsahara <- glue::glue("UT = (", glue::glue_collapse(M_single_SubSahara$U
 We used the previous query to find the single article authors in WoS and downloaded the information of the ~4000 papers citing East Middle Africa single author papers
 
 ```{r}
-files <- here::here("data", "processed", "MiddleEastAfrica_citing_articles", c("01_citing_MAfrica.txt", "02_citing_MAfrica.txt", "03_citing_MAfrica.txt", "04_citing_MAfrica.txt"))
-M_citations_MiddleAfrica <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
-results_citation_MiddleAfrica <- biblioAnalysis(M_citations_MiddleAfrica, sep = ";")
-countries_cite_MiddleAfrica <- results_citation_MiddleAfrica$Countries[order(results_citation_MiddleAfrica$Countries, decreasing = TRUE)]
-prop_countries_cite_MiddleAfrica <- (countries_cite_MiddleAfrica)/sum(countries_cite_MiddleAfrica)
-tab_citation_MiddleAfrica <- data.frame(countries = names(countries_cite_MiddleAfrica), 
-                              middle.citation = as.vector(countries_cite_MiddleAfrica), 
-                              eu.citation.prop = as.vector(prop_countries_cite_MiddleAfrica))
+files <- here::here("data", "processed", "Sahara_citing_articles", c("01_citing_sahara.txt", "02_citing_sahara.txt", "03_citing_sahara.txt", "04_citing_sahara.txt", "05_citing_sahara.txt"))
+M_citations_Sahara <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
+results_citation_Sahara <- biblioAnalysis(M_citations_Sahara, sep = ";")
+countries_cite_Sahara <- results_citation_Sahara$Countries[order(results_citation_Sahara$Countries, decreasing = TRUE)]
+prop_countries_cite_Sahara <- (countries_cite_Sahara)/sum(countries_cite_Sahara)
+tab_citation_Sahara <- data.frame(countries = names(countries_cite_Sahara), 
+                              sahara.citation = as.vector(countries_cite_Sahara), 
+                              sahara.citation.prop = as.vector(prop_countries_cite_Sahara))
+```
+Saving M type matrices to perform rarefaction 
+
+```{r}
+saveRDS(M_citations_EastAsia, here::here("data", "processed", "M_EastAsia.rds"))
+saveRDS(M_citations_EU, here::here("data", "processed", "M_EU.rds"))
+saveRDS(M_citations_la, here::here("data", "processed", "M_LA.rds"))
+saveRDS(M_citations_MiddleAfrica, here::here("data", "processed", "M_MiddleAfrica.rds"))
+saveRDS(M_citations_Sahara, here::here("data", "processed", "M_Sahara.rds"))
+saveRDS(M_citations_usa_can, here::here("data", "processed", "M_USA.rds"))
 ```
 
+Performing rarefaction based on the region with less citations. This is used to control for the different number of workds citing each single author papers from different regions
+```{r}
+
+```
 
 
 
@@ -313,6 +327,7 @@ tab_all_citation <-
   right_join(tab_citation_EU, by = "countries")  %>% 
   right_join(tab_citation_EastAsia, by = "countries") %>% 
   right_join(tab_citation_MiddleAfrica, by = "countries")
+View(tab_all_citation)
 ```
 
 # Citation bias analysis 
