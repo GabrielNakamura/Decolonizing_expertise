@@ -311,8 +311,26 @@ saveRDS(M_citations_Sahara, here::here("data", "processed", "M_Sahara.rds"))
 saveRDS(M_citations_usa_can, here::here("data", "processed", "M_USA.rds"))
 ```
 
-Performing rarefaction based on the region with less citations. This is used to control for the different number of workds citing each single author papers from different regions
+# bootstraping results 
+
+Performing rarefaction based on the region with less citations. This is used to control for the different number of workds citing each single author papers from different regions. We are gonna use 3000 references as the minimum sample to use in the bootstrap procedure (without replacement)
+
 ```{r}
+
+M_citations_EastAsia <- readRDS(here::here("data", "processed", "M_EastAsia.rds"))
+M_citations_EU <- readRDS(here::here("data", "processed", "M_EU.rds"))
+M_citations_la <- readRDS(here::here("data", "processed", "M_LA.rds"))
+M_citations_MiddleAfrica <- readRDS(here::here("data", "processed", "M_MiddleAfrica.rds"))
+M_citations_Sahara <- readRDS(here::here("data", "processed", "M_Sahara.rds"))
+M_citations_usa_can <- readRDS(here::here("data", "processed", "M_USA.rds"))
+
+
+dim(M_citations_EastAsia)
+dim(M_citations_EU)
+dim(M_citations_la)
+dim(M_citations_MiddleAfrica)
+dim(M_citations_Sahara)
+dim(M_citations_usa_can)
 
 ```
 
