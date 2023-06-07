@@ -1,3 +1,18 @@
+---
+title: "Citation Bias with rarefaction"
+author: "Gabriel Nakamura"
+date: "2023-06-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+First getting the names of the countries
+
+```{r}
 library(hrbrthemes)
 library(ggplot2)
 library(bibliometrix)
@@ -15,7 +30,12 @@ names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
 names_SouthAsia <- subset(countries, region_wb == "South Asia")$admin
 names_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")$admin
 
+```
 
+
+Assigning a color pallete to standardize the colors of the regions
+
+```{r}
 safe_colorblind_palette <- c("#88CCEE", "#CC6677", "#DDCC77", "#117733", "#332288", "#AA4499", 
                              "#44AA99", "#999933", "#882255", "#661100", "#6699CC", "#888888")
 
@@ -26,7 +46,12 @@ color_map <- c("Latin America" = "#117733",
                "USA and Canada" = "#661100", 
                "South Asia" = "#DDCC77",
                "Sahara" = "#888888")
+```
 
+Selecting only the top 10 countries that cite a given region and plotting the rarefaction values of citation for each country
+
+```{r}
+# USA and Canada
 
 names_top_usacan <- all_cit[which(all_cit$region == "USA-Can"), ][1:10, "count"]
 count_top_usacan <- long_cit_usacan[which(is.na(match(long_cit_usacan$count, names_top_usacan)) != TRUE), ]
@@ -40,21 +65,7 @@ count_top_usacan_order[count_top_usacan_order$count %in% toupper(names_NA), "reg
 count_top_usacan_order[count_top_usacan_order$count %in% toupper(names_SouthAsia), "region.wb"] <- "South Asia"
 count_top_usacan_order[count_top_usacan_order$count %in% toupper(names_SubSahara), "region.wb"] <- "Sahara"
 
-viol_usacan <- 
-  count_top_usacan_order %>%
-  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
-  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
-  geom_violin(width=2.1, size=0.2) +
-  scale_fill_manual(name = "Region", values = color_map) +
-  theme_ipsum() +
-  theme(
-    legend.position="none"
-  ) +
-  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
-  xlab("") +
-  ylab("number of citations in bootstrap sample")
-
-
+# East Asia
 names_top_eastasia <- all_cit[which(all_cit$region == "East Asia"), ][1:10, "count"]
 count_top_eastasia <- long_cit_eastasia[which(is.na(match(long_cit_eastasia$count, names_top_eastasia)) != TRUE), ]
 count_top_eastasia_order <- count_top_eastasia[order(count_top_eastasia$ncitations, decreasing = T), ]
@@ -67,21 +78,7 @@ count_top_eastasia_order[count_top_eastasia_order$count %in% toupper(names_NA), 
 count_top_eastasia_order[count_top_eastasia_order$count %in% toupper(names_SouthAsia), "region.wb"] <- "South Asia"
 count_top_eastasia_order[count_top_eastasia_order$count %in% toupper(names_SubSahara), "region.wb"] <- "Sahara"
 
-viol_eastasia <- 
-  count_top_eastasia_order %>%
-  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
-  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
-  geom_violin(width=2.1, size=0.2) +
-  scale_fill_manual(name = "Region", values = color_map) +
-  theme_ipsum() +
-  theme(
-    legend.position="none"
-  ) +
-  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
-  xlab("") +
-  ylab("Number of citations in bootstrap sample")
-
-
+# Latin America 
 names_top_la <- all_cit[which(all_cit$region == "Latin Am."), ][1:10, "count"]
 count_top_la <- long_cit_la[which(is.na(match(long_cit_la$count, names_top_la)) != TRUE), ]
 count_top_la_order <- count_top_la[order(count_top_la$ncitations, decreasing = T), ]
@@ -94,21 +91,7 @@ count_top_la_order[count_top_la_order$count %in% toupper(names_NA), "region.wb"]
 count_top_la_order[count_top_la_order$count %in% toupper(names_SouthAsia), "region.wb"] <- "South Asia"
 count_top_la_order[count_top_la_order$count %in% toupper(names_SubSahara), "region.wb"] <- "Sahara"
 
-viol_la <- 
-  count_top_la_order %>%
-  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
-  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
-  geom_violin(width=2.1, size=0.2) +
-  scale_fill_manual(name = "Region", values = color_map) +
-  theme_ipsum() +
-  theme(
-    legend.position="none"
-  ) +
-  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
-  xlab("") +
-  ylab("Number of citations in bootstrap sample")
-
-
+# Europe
 names_top_europe <- all_cit[which(all_cit$region == "Europe"), ][1:10, "count"]
 count_top_europe <- long_cit_eu[which(is.na(match(long_cit_eu$count, names_top_europe)) != TRUE), ]
 count_top_europe_order <- count_top_europe[order(count_top_europe$ncitations, decreasing = T), ]
@@ -121,19 +104,7 @@ count_top_europe_order[count_top_europe_order$count %in% toupper(names_NA), "reg
 count_top_europe_order[count_top_europe_order$count %in% toupper(names_SouthAsia), "region.wb"] <- "South Asia"
 count_top_europe_order[count_top_europe_order$count %in% toupper(names_SubSahara), "region.wb"] <- "Sahara"
 
-viol_europe <- 
-  count_top_europe_order %>%
-  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
-  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
-  geom_violin(width=2.1, size=0.2) +
-  scale_fill_manual(name = "Region", values = color_map) +
-  theme_ipsum() +
-  theme(
-    legend.position="none"
-  ) +
-  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
-  xlab("") +
-  ylab("Number of citations in bootstrap sample")
+# Sahara
 
 names_top_sahara <- all_cit[which(all_cit$region == "Sahara"), ][1:10, "count"]
 count_top_sahara <- long_cit_sahara[which(is.na(match(long_cit_sahara$count, names_top_sahara)) != TRUE), ]
@@ -147,23 +118,164 @@ count_top_sahara_order[count_top_sahara_order$count %in% toupper(names_NA), "reg
 count_top_sahara_order[count_top_sahara_order$count %in% toupper(names_SouthAsia), "region.wb"] <- "South Asia"
 count_top_sahara_order[count_top_sahara_order$count %in% toupper(names_SubSahara), "region.wb"] <- "Sahara"
 
+# Middle Africa
+
+names_top_mafrica <- all_cit[which(all_cit$region == "Middle Africa"), ][1:10, "count"]
+count_top_mafrica <- long_cit_middleafrica[which(is.na(match(long_cit_middleafrica$count, names_top_mafrica)) != TRUE), ]
+count_top_mafrica_order <- count_top_mafrica[order(count_top_mafrica$ncitations, decreasing = T), ]
+count_top_mafrica_order$region.wb <- NA
+count_top_mafrica_order[count_top_mafrica_order$count %in% toupper(names_LA), "region.wb"] <- "Latin America"
+count_top_mafrica_order[count_top_mafrica_order$count %in% toupper(names_EastAsia), "region.wb"] <- "East Asia"
+count_top_mafrica_order[count_top_mafrica_order$count %in% toupper(names_EU), "region.wb"] <- "Europe"
+count_top_mafrica_order[count_top_mafrica_order$count %in% toupper(names_MidleEastAfrica), "region.wb"] <- "Middle Africa"
+count_top_mafrica_order[count_top_mafrica_order$count %in% toupper(names_NA), "region.wb"] <- "USA and Canada"
+count_top_mafrica_order[count_top_mafrica_order$count %in% toupper(names_SouthAsia), "region.wb"] <- "South Asia"
+count_top_mafrica_order[count_top_mafrica_order$count %in% toupper(names_SubSahara), "region.wb"] <- "Sahara"
+
+
+
+```
+
+
+Now we can plot the all the six violin plots with the mean values of citation that came from the rarefaction procedure 
+
+```{r}
+
+viol_usacan <- 
+  count_top_usacan_order %>%
+  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
+  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
+  geom_violin(width=2.1, size=0.2) +
+  scale_fill_manual(name = "Region", values = color_map) +
+  labs(subtitle = "USA and Canada", title = "") +
+  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+  xlab("") +
+  ylab("Citations") +
+  annotate("text", x = 1.5, y = 250, 
+           label = glue::glue("italic(J)=={round(J_usa, 3)}"), 
+           parse = TRUE, size = 4) +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        legend.position = "none",
+        legend.text = element_text(family = "Times", color = "black", size = 8),
+        panel.border = element_blank())
+
+
+viol_eastasia <- 
+  count_top_eastasia_order %>%
+  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
+  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
+  geom_violin(width=2.1, size=0.2) +
+  scale_fill_manual(name = "Region", values = color_map) +
+  labs(subtitle = "East Asia", title = "") +
+  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+  xlab("") +
+  ylab("Citations") +
+  annotate("text", x = 1.5, y = 200, 
+           label = glue::glue("italic(J)=={round(J_east_asia, 3)}"), 
+           parse = TRUE, size = 4) +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        legend.position = "none",
+        legend.text = element_text(family = "Times", color = "black", size = 8),
+        panel.border = element_blank())
+
+viol_la <- 
+  count_top_la_order %>%
+  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
+  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
+  geom_violin(width=2.1, size=0.2) +
+  scale_fill_manual(name = "Region", values = color_map) +
+  labs(subtitle = "Latin America", title = "") +
+  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+  xlab("") +
+  ylab("Citations") +
+  annotate("text", x = 1.5, y = 200, 
+           label = glue::glue("italic(J)=={round(J_la, 3)}"), 
+           parse = TRUE, size = 4) +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        legend.position = "none",
+        legend.text = element_text(family = "Times", color = "black", size = 8),
+        panel.border = element_blank())
+
+
+viol_europe <- 
+  count_top_europe_order %>%
+  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
+  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
+  geom_violin(width=2.1, size=0.2) +
+  scale_fill_manual(name = "Region", values = color_map) +
+  labs(subtitle = "Europe", title = "") +
+  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+  xlab("") +
+  ylab("Citations") +
+  annotate("text", x = 1.5, y = 200, 
+           label = glue::glue("italic(J)=={round(J_eu, 3)}"), 
+           parse = TRUE, size = 4) +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        legend.position = "none",
+        legend.text = element_text(family = "Times", color = "black", size = 8),
+        panel.border = element_blank())
+
 viol_sahara <- 
   count_top_sahara_order %>%
   mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
   ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
   geom_violin(width=2.1, size=0.2) +
   scale_fill_manual(name = "Region", values = color_map) +
-  theme_ipsum() +
-  theme(
-    legend.position="none"
-  ) +
+  labs(subtitle = "Sub-Saharan", title = "") +
   coord_flip() + # This switch X and Y axis and allows to get the horizontal version
   xlab("") +
-  ylab("Number of citations in bootstrap sample")
+  ylab("Citations") +
+  annotate("text", x = 1.5, y = 170, 
+           label = glue::glue("italic(J)=={round(J_sahara, 3)}"), 
+           parse = TRUE, size = 4) +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        legend.position = "none",
+        legend.text = element_text(family = "Times", color = "black", size = 8),
+        panel.border = element_blank())
+  
 
 
-# Joining all violins
+viol_middleafrica <- 
+  count_top_mafrica_order %>%
+  mutate(ordcount = forcats::fct_reorder(count, ncitations)) %>% # Reorder data
+  ggplot( aes(x=ordcount, y=ncitations, fill=region.wb)) +
+  geom_violin(width=2.1, size=0.2) +
+  scale_fill_manual(name = "Region", values = color_map) +
+  labs(subtitle = "Middle Africa", title = "") +
+  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+  xlab("") +
+  ylab("Citations") +
+  annotate("text", x = 1.5, y = 200, 
+           label = glue::glue("italic(J)=={round(J_mafrica, 3)}"), 
+           parse = TRUE, size = 4) +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        legend.position = "none",
+        legend.text = element_text(family = "Times", color = "black", size = 8),
+        panel.border = element_blank())
+  
+
+```
+
+
+Joining all violin plots
+
+```{r}
 legend <- get_legend(viol_la + theme(legend.position = "bottom")) 
 all_violin <- 
-  plot_grid(viol_la, viol_usacan, viol_eastasia, viol_europe, viol_sahara, ncol = 2, labels = "AUTO")
+  plot_grid(viol_la, viol_usacan, viol_eastasia, viol_europe, viol_sahara, viol_middleafrica, ncol = 3)
 plot_violin <- plot_grid(all_violin, legend, ncol = 1, rel_heights = c(2, 0.5))
+
+```
+

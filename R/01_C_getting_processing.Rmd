@@ -344,14 +344,16 @@ tab_all_citation <-
   right_join(tab_citation_LA, by = "countries") %>% 
   right_join(tab_citation_EU, by = "countries")  %>% 
   right_join(tab_citation_EastAsia, by = "countries") %>% 
-  right_join(tab_citation_MiddleAfrica, by = "countries")
-View(tab_all_citation)
+  right_join(tab_citation_MiddleAfrica, by = "countries") %>% 
+  right_join(tab_citation_Sahara, by = "countries")
+
 ```
 
 # Citation bias analysis 
 
 ```{r political_reg}
 library(ggplot2)
+library(tidyverse)
 library(vegan)
 
 tab_all_citation$continent <- NA
@@ -361,7 +363,7 @@ tab_all_citation[tab_all_citation$countries %in% names_NA, "continent"] <- "USA 
 tab_all_citation[tab_all_citation$countries %in% names_EU, "continent"] <- "Europe"
 tab_all_citation[tab_all_citation$countries %in% names_MidleEastAfrica, "continent"] <- "Middle East & Africa"
 tab_all_citation[tab_all_citation$countries %in% names_EastAsia, "continent"] <- "East Asia"
-tab_all_citation[tab_all_citation$countries %in% names_SouthAsia, "continent"] <- "South Asia"
+tab_all_citation[tab_all_citation$countries %in% names_SubSahara, "continent"] <- "Sahara"
 
 # manually fixing some classifications
 tab_all_citation[which(is.na(tab_all_citation$continent) == TRUE), "continent"] <- 
@@ -386,6 +388,10 @@ H_eu <- diversity(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.citati
 
 H_eastasia <- diversity(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)], index = "shannon")
 
+H_sahara <- diversity(tab_all_citation$sahara.citation[!is.na(tab_all_citation$sahara.citation)], index = "shannon")
+
+H_mafrica <- diversity(tab_all_citation$middle.citation[!is.na(tab_all_citation$middle.citation)], index = "shannon")
+
 
 J_usa <- H_usa/log(length(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)]))
 
@@ -395,88 +401,14 @@ J_eu <- H_eu/log(length(tab_all_citation$eu.citation[!is.na(tab_all_citation$eu.
 
 J_east_asia <- H_eu/log(length(tab_all_citation$EastAsia.citation[!is.na(tab_all_citation$EastAsia.citation)]))
 
+J_sahara <- H_sahara/log(length(tab_all_citation$sahara.citation[!is.na(tab_all_citation$sahara.citation)]))
+
+J_mafrica <- H_mafrica/log(length(tab_all_citation$middle.citation[!is.na(tab_all_citation$middle.citation)]))
+
 
 ```
 
 ### plotting citation proportion
-
-```{r plot}
-library(cowplot)
-
-usa_citation_plot <- 
-ggplot(data = tab_all_citation, aes(x = continent, y = usa.citation.prop)) +
-  geom_violin() +
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  stat_summary(fun = "mean",
-               geom = "crossbar", 
-               width = 0.3,
-               colour = "blue") +
-  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
-  ylab("Proportion citations USA-CAN") +
-  xlab("") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 6, y = 1, 
-           label = glue::glue("italic(J)=={round(J_usa, 3)}"), 
-           parse = TRUE, size = 5)
-
-la_citation_plot <- 
-ggplot(data = tab_all_citation, aes(x = continent, y = LA.citation.prop)) +
-  geom_violin() +
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  stat_summary(fun = "mean",
-               geom = "crossbar", 
-               width = 0.3,
-               colour = "blue") +
-  ylab("Proportion citations LA") +
-  xlab("") +
-  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 6, y = 1, 
-           label = glue::glue("italic(J)=={round(J_la, 3)}"), 
-           parse = TRUE, size = 5)
-
-eu_citation_plot <- 
-  ggplot(data = tab_all_citation, aes(x = continent, y = eu.citation.prop)) +
-    geom_violin() + 
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  stat_summary(fun = "mean",
-               geom = "crossbar", 
-               width = 0.3,
-               colour = "blue") +
-  ylab("Proportion citations EU") +
-  xlab("") +
-  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 6, y = 1, 
-           label = glue::glue("italic(J)=={round(J_eu, 3)}"), 
-           parse = TRUE, size = 5)
-
-eastasia_citation_plot <- 
-  ggplot(data = tab_all_citation, aes(x = continent, y = EastAsia.citation.prop)) +
-    geom_violin() + 
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  stat_summary(fun = "mean",
-               geom = "crossbar", 
-               width = 0.3,
-               colour = "blue") +
-  ylab("Proportion citations East Asia") +
-  xlab("") +
-  scale_y_continuous(limits = c(0, 1), trans = "sqrt") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1)) +
-  annotate("text", x = 6, y = 1, 
-           label = glue::glue("italic(J)=={round(J_east_asia, 3)}"), 
-           parse = TRUE, size = 5)
-
-
-plot_all <- usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_citation_plot
-
-```
 
 Trying some different ways to present the data on citation bias. Barplots bellow
 
