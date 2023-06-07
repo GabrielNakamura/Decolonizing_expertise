@@ -77,57 +77,89 @@ I've made some minor manual complements to add names that are from some region b
 Here I calculated the number of geographical markers for each country in each regionf for all top 1000 cited papers.
 
 ```{r}
+
+# Zoogeographical regions
+
+zoogeo <- c("Neotropical", "Neotropic", "Neartical", "Neartic", "Afrotropic", "Afrotropical", "Paleartical", "Paleartic", "Australasian", "Indomalayan")
+
+
 # Europe
 geo_eu <- lapply(toupper(names_EU), function(x) grep(x, M_EU$TI, fixed = T))
+zoo_eu <- lapply(toupper(zoogeo), function(x) grep(x, M_EU$TI, fixed = T))
 count_geo_eu <- lapply(geo_eu, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_eu <- lapply(zoo_eu, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_eu) <- names_EU
+names(count_zoo_eu) <- zoogeo
 count_geo_eu <- unlist(count_geo_eu)
+count_zoo_eu <- unlist(count_zoo_eu)
 
 # Latin America
 
 geo_la <- lapply(toupper(names_LA), function(x) grep(x, M_LA$TI, fixed = T))
+zoo_la <- lapply(toupper(zoogeo), function(x) grep(x, M_LA$TI, fixed = T))
 count_geo_la <- lapply(geo_la, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_la <- lapply(zoo_la, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_la) <- names_LA
+names(count_zoo_la) <- zoogeo
 count_geo_la <- unlist(count_geo_la)
+count_zoo_la <- unlist(count_zoo_la)
 
 # North America
 
 geo_us <- lapply(toupper(names_NA), function(x) grep(x, M_US$TI, fixed = T))
+zoo_us <- lapply(toupper(zoogeo), function(x) grep(x, M_US$TI, fixed = T))
 count_geo_us <- lapply(geo_us, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_us <- lapply(zoo_us, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_us) <- names_NA
+names(count_zoo_us) <- zoogeo
 count_geo_us <- unlist(count_geo_us)
+count_zoo_us <- unlist(count_zoo_us)
 
 # East Asia
 
 geo_ea <- lapply(toupper(names_EastAsia), function(x) grep(x, M_EA$TI, fixed = T))
+zoo_ea <- lapply(toupper(zoogeo), function(x) grep(x, M_EA$TI, fixed = T))
 count_geo_ea <- lapply(geo_ea, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_ea <- lapply(zoo_ea, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_ea) <- names_EastAsia
+names(count_zoo_ea) <- zoogeo
 count_geo_ea <- unlist(count_geo_ea)
+count_zoo_ea <- unlist(count_zoo_ea)
 
 # Africa 
 geo_africa <- lapply(toupper(names_SubSahara), function(x) grep(x, M_Africa$TI, fixed = T))
+zoo_africa <- lapply(toupper(zoogeo), function(x) grep(x, M_Africa$TI, fixed = T))
 count_geo_africa <- lapply(geo_africa, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_africa <- lapply(zoo_africa, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_africa) <- names_SubSahara
+names(count_zoo_africa) <- zoogeo
 count_geo_africa <- unlist(count_geo_africa)
+count_zoo_africa <- unlist(count_zoo_africa)
 
 # South Asia
 geo_sa <- lapply(toupper(names_SouthAsia), function(x) grep(x, M_sa$TI, fixed = T))
-M_sa[unlist(geo_sa), "TI"]
+zoo_sa <- lapply(toupper(zoogeo), function(x) grep(x, M_sa$TI, fixed = T))
 count_geo_sa <- lapply(geo_sa, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_sa <- lapply(zoo_sa, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_sa) <- names_SouthAsia
+names(count_zoo_sa) <- zoogeo
 count_geo_sa <- unlist(count_geo_sa)
+count_zoo_sa <- unlist(count_zoo_sa)
 
 # North Africa
 geo_NAfrica <- lapply(toupper(names_NAfrica), function(x) grep(x, M_NAfrica$TI, fixed = T))
+zoo_NAfrica <- lapply(toupper(zoogeo), function(x) grep(x, M_NAfrica$TI, fixed = T))
 count_geo_NAfrica <- lapply(geo_NAfrica, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_NAfrica <- lapply(zoo_NAfrica, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_NAfrica) <- names_NAfrica
+names(count_zoo_NAfrica) <- zoogeo
 count_geo_NAfrica <- unlist(count_geo_NAfrica)
+count_zoo_NAfrica <- unlist(count_zoo_NAfrica)
 
-
+df_zoo_count <- 
+  rbind(count_zoo_africa, count_zoo_ea, count_zoo_eu, count_zoo_la, count_zoo_NAfrica, count_zoo_sa, count_zoo_us)
+colSums(df_zoo_count)
 ```
-
-
-# Calculating the number of zoogeographical markers 
 
 
 
@@ -197,9 +229,13 @@ sf_mean <- sf_all %>% group_by(region_wb) %>%
 Making maps, two options, one coloring only World bank regions and another all countries
 
 ```{r}
+
+library(rmapshaper)
+sf_mean_noisland <- ms_filter_islands(sf_mean, drop_null_geometries = T)
+
 map_markers_wb <-
   ggplot() +
-  geom_sf(data = sf_mean, aes(fill = sum_count)) +
+  geom_sf(data = sf_mean_noisland, aes(fill = sum_count)) +
   rcartocolor::scale_fill_carto_c(palette = "DarkMint",
                                   direction = 1,
                                   limits = c(10, 300),  ## max percent overall
@@ -225,18 +261,19 @@ map_markers_wb <-
         plot.subtitle = element_blank())
   
 
-map_all_countries <- 
-ggplot() +
-  geom_sf(data = countries) +
-  geom_sf(data = sf_count_la, aes(fill = count)) +
-  geom_sf(data = sf_count_us, aes(fill = count)) +
-  geom_sf(data = sf_count_ea, aes(fill = count)) +
-  geom_sf(data = sf_count_eu, aes(fill = count)) +
-  geom_sf(data = sf_count_africa, aes(fill = count)) +
-  geom_sf(data = sf_count_sa, aes(fill = count)) +
-  geom_sf(data = sf_count_NAfrica, aes(fill = count))
+# map_all_countries <- 
+# ggplot() +
+#   geom_sf(data = countries) +
+#   geom_sf(data = sf_count_la, aes(fill = count)) +
+#   geom_sf(data = sf_count_us, aes(fill = count)) +
+#   geom_sf(data = sf_count_ea, aes(fill = count)) +
+#   geom_sf(data = sf_count_eu, aes(fill = count)) +
+#   geom_sf(data = sf_count_africa, aes(fill = count)) +
+#   geom_sf(data = sf_count_sa, aes(fill = count)) +
+#   geom_sf(data = sf_count_NAfrica, aes(fill = count))
 
 
+map_markers_wb
 
 
 ```

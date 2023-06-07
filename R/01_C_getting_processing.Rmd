@@ -156,7 +156,7 @@ M_single_USA_CAN <- M_single_USA_CAN[s_paper_can_usa, ] # unique single article 
 q_top_USA_CAN <- glue::glue("UT = (", glue::glue_collapse(M_single_USA_CAN$UT,  sep = ' OR '), ")")
 ```
 
-Most 10000 recent citations from top 235 single author papers from. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search. This is the same procedure I performed above for LA region
+Most 10000 recent citations from top 235 single author papers from USA and Canada. These citation articles were extracted from WoS using the code above, we simply copied and paste the identifiers above in the browser using the web application of WoS to perform the search. This is the same procedure I performed above for LA region
 
 ```{r}
 files <- here::here("data", "processed", "USA_CAN_citing_articles", c("01_citing_USA_CAN.txt", "02_citing_USA_CAN.txt", "03_citing_USA_CAN.txt", "04_citing_USA_CAN.txt", "05_citing_USA_CAN.txt", "06_citing_USA_CAN.txt", "07_citing_USA_CAN.txt", "08_citing_USA_CAN.txt", "09_citing_USA_CAN.txt", "10_citing_USA_CAN.txt"))
