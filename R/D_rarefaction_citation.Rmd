@@ -199,7 +199,7 @@ viol_la <-
   theme(panel.background = element_rect(fill = "transparent"),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
         legend.position = "none",
-        legend.text = element_text(family = "Times", color = "black", size = 8),
+        legend.text = element_text(family = "Times", color = "black", size = 10),
         panel.border = element_blank())
 
 
@@ -220,6 +220,7 @@ viol_europe <-
   theme(panel.background = element_rect(fill = "transparent"),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
         legend.position = "none",
+        axis.text.x = element_text(family = "Times", color = "black", size = 9),
         legend.text = element_text(family = "Times", color = "black", size = 8),
         panel.border = element_blank())
 
@@ -239,6 +240,7 @@ viol_sahara <-
   theme_bw() +
   theme(panel.background = element_rect(fill = "transparent"),
         plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "mm"),
+        axis.text.x = element_text(family = "Times", color = "black", size = 8),
         legend.position = "none",
         legend.text = element_text(family = "Times", color = "black", size = 8),
         panel.border = element_blank())
