@@ -300,39 +300,6 @@ tab_citation_Sahara <- data.frame(countries = names(countries_cite_Sahara),
                               sahara.citation = as.vector(countries_cite_Sahara), 
                               sahara.citation.prop = as.vector(prop_countries_cite_Sahara))
 ```
-Saving M type matrices to perform rarefaction 
-
-```{r}
-saveRDS(M_citations_EastAsia, here::here("data", "processed", "M_EastAsia.rds"))
-saveRDS(M_citations_EU, here::here("data", "processed", "M_EU.rds"))
-saveRDS(M_citations_la, here::here("data", "processed", "M_LA.rds"))
-saveRDS(M_citations_MiddleAfrica, here::here("data", "processed", "M_MiddleAfrica.rds"))
-saveRDS(M_citations_Sahara, here::here("data", "processed", "M_Sahara.rds"))
-saveRDS(M_citations_usa_can, here::here("data", "processed", "M_USA.rds"))
-```
-
-# bootstraping results 
-
-Performing rarefaction based on the region with less citations. This is used to control for the different number of workds citing each single author papers from different regions. We are gonna use 3000 references as the minimum sample to use in the bootstrap procedure (without replacement)
-
-```{r}
-
-M_citations_EastAsia <- readRDS(here::here("data", "processed", "M_EastAsia.rds"))
-M_citations_EU <- readRDS(here::here("data", "processed", "M_EU.rds"))
-M_citations_la <- readRDS(here::here("data", "processed", "M_LA.rds"))
-M_citations_MiddleAfrica <- readRDS(here::here("data", "processed", "M_MiddleAfrica.rds"))
-M_citations_Sahara <- readRDS(here::here("data", "processed", "M_Sahara.rds"))
-M_citations_usa_can <- readRDS(here::here("data", "processed", "M_USA.rds"))
-
-
-dim(M_citations_EastAsia)
-dim(M_citations_EU)
-dim(M_citations_la)
-dim(M_citations_MiddleAfrica)
-dim(M_citations_Sahara)
-dim(M_citations_usa_can)
-
-```
 
 
 
@@ -349,13 +316,29 @@ tab_all_citation <-
 
 ```
 
+Saving M type matrices to perform rarefaction and also citation matrices for further analysis
+
+```{r}
+saveRDS(M_citations_EastAsia, here::here("data", "processed", "M_EastAsia.rds"))
+saveRDS(M_citations_EU, here::here("data", "processed", "M_EU.rds"))
+saveRDS(M_citations_la, here::here("data", "processed", "M_LA.rds"))
+saveRDS(M_citations_MiddleAfrica, here::here("data", "processed", "M_MiddleAfrica.rds"))
+saveRDS(M_citations_Sahara, here::here("data", "processed", "M_Sahara.rds"))
+saveRDS(M_citations_usa_can, here::here("data", "processed", "M_USA.rds"))
+saveRDS(M_citations_usa_can, here::here("data", "processed", "M_USA.rds"))
+saveRDS(object = tab_all_citation, file = here::here("data", "processed", "tab_all_citation.rds"))
+```
+
 # Citation bias analysis 
+
+First I manually corrected some continent names
 
 ```{r political_reg}
 library(ggplot2)
 library(tidyverse)
 library(vegan)
 
+tab_all_citation <- readRDS(here::here("data", "processed", "tab_all_citation.rds"))
 tab_all_citation$continent <- NA
 tab_all_citation$countries <- str_to_title(tab_all_citation$countries)
 tab_all_citation[tab_all_citation$countries %in% names_LA, "continent"] <- "Latin America"
@@ -367,17 +350,19 @@ tab_all_citation[tab_all_citation$countries %in% names_SubSahara, "continent"] <
 
 # manually fixing some classifications
 tab_all_citation[which(is.na(tab_all_citation$continent) == TRUE), "continent"] <- 
-  c("Middle East & Africa", "Middle East & Africa", "East Asia", "Other", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Middle East & Africa", "Europe")
+  c("South Asia", "East Asia", "Latin America", "South Asia", "Europe", "Middle East & Africa", "Sahara", "East Asia", "South Asia", "South Asia")
 
-tab_all_citation[which(tab_all_citation$continent == "Malawi"), "continent"] <- "Middle East & Africa"
 
 
 ```
-### citation bias
+
+
+### citation bias with Pielou index
 
 We used the Pielou evenness index to express the degree of citation bias. Lower values indicate that citation are more biased towards certain regions/countries. Higher values indicate that the citations are more evenly distributed throught different countries.
 
 ```{r}
+
 H_usa <- 
 diversity(tab_all_citation$usa.citation[!is.na(tab_all_citation$usa.citation)], index = "shannon")
 
@@ -407,91 +392,4 @@ J_mafrica <- H_mafrica/log(length(tab_all_citation$middle.citation[!is.na(tab_al
 
 
 ```
-
-### plotting citation proportion
-
-Trying some different ways to present the data on citation bias. Barplots bellow
-
-```{r}
-
-tab_all_citation <- readRDS(here::here("data", "processed", "tab_all_citation.rds"))
-tab_all_citation <- tab_all_citation[-which(tab_all_citation$continent == "Other"), ]
-usa_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = usa.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  ylab("Proportion citations USA-CAN") +
-  xlab("") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 5.7, y = 0.5, 
-           label = glue::glue("italic(J)=={round(J_usa, 3)}"), 
-           parse = TRUE, size = 5)
-  
-la_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = LA.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  ylab("Proportion citations LA") +
-  xlab("") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 5, y = 0.5, 
-           label = glue::glue("italic(J)=={round(J_la, 3)}"), 
-           parse = TRUE, size = 5)
-
-eu_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = eu.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  ylab("Proportion citations EU") +
-  xlab("") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 5.7, y = 0.5, 
-           label = glue::glue("italic(J)=={round(J_eu, 3)}"), 
-           parse = TRUE, size = 5)
-
-eastasia_citation_plot <- 
-ggplot() +
-  geom_bar(data = tab_all_citation, aes(x = continent, y = EastAsia.citation.prop), position = "dodge", stat = "identity") +
-  ylim(0, 0.5) +
-  ylab("Proportion citations East Asia") +
-  xlab("") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1), legend.position = "none")  +
-  annotate("text", x = 5, y = 0.5, 
-           label = glue::glue("italic(J)=={round(J_east_asia, 3)}"), 
-           parse = TRUE, size = 5)
-
-plot_all <- usa_citation_plot + la_citation_plot + eu_citation_plot + eastasia_citation_plot
-
-```
-
-
-
-Saving plot that goes in the main text 
-
-```{r}
-
-ggsave(filename = here::here("output", "Fig1_citation_all.png"), 
-       plot = plot_all, 
-       width = 15, 
-       height = 8, 
-       dpi = 300)
-```
-
-
-
-Saving tables with all citation values and proportions
-
-```{r}
-saveRDS(object = tab_all_citation, file = here::here("data", "processed", "tab_all_citation.rds"))
-```
-
-
-
-
-
-
 

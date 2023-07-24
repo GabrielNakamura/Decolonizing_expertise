@@ -22,6 +22,7 @@ library(magrittr)
 library(bibliometrix)
 library(rnaturalearth)
 library(ggplot2)
+library(rmapshaper)
 ```
 
 Reading all files containing the top 1000 articles selected based on the address location of the corresponding author
@@ -41,6 +42,7 @@ files_mafrica <- here::here("data", "raw", "MiddleEastAfrica_top1000.txt")
 M_mafrica <- convert2df(file = files_mafrica, dbsource = 'wos', format = "plaintext")
 
 ```
+
 # Calculating the number of geo markers
 
 Here I calculate the number of [geographical markers](https://www.sciencedirect.com/science/article/abs/pii/S0016718519301551) per country for each one of the groups defined in the previous section.
@@ -67,7 +69,9 @@ sf_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")[, c("admin"
 
 I've made some minor manual complements to add names that are from some region but were not present in the rnaturalearth database
 
-Here I calculated the number of geographical markers for each country in each regionf for all top 1000 cited papers.
+# Calculating the number of zoogeographical markers
+
+Here I calculated the number of geographical markers for each country in each region for all top 1000 cited papers.
 
 ```{r}
 
@@ -120,8 +124,8 @@ count_geo_ea <- unlist(count_geo_ea)
 count_zoo_ea <- unlist(count_zoo_ea)
 
 # Africa 
-geo_africa <- lapply(toupper(names_SubSahara), function(x) grep(x, M_Africa$TI, fixed = T))
-zoo_africa <- lapply(toupper(zoogeo), function(x) grep(x, M_Africa$TI, fixed = T))
+geo_africa <- lapply(toupper(names_SubSahara), function(x) grep(x, M_sahara$TI, fixed = T))
+zoo_africa <- lapply(toupper(zoogeo), function(x) grep(x, M_sahara$TI, fixed = T))
 count_geo_africa <- lapply(geo_africa, function(x) ifelse(length(x) == 0, 0, length(x)))
 count_zoo_africa <- lapply(zoo_africa, function(x) ifelse(length(x) == 0, 0, length(x)))
 names(count_geo_africa) <- names_SubSahara
@@ -135,7 +139,7 @@ geo_NAfrica <- lapply(toupper(names_MidleEastAfrica), function(x) grep(x, M_mafr
 zoo_NAfrica <- lapply(toupper(zoogeo), function(x) grep(x, M_mafrica$TI, fixed = T))
 count_geo_NAfrica <- lapply(geo_NAfrica, function(x) ifelse(length(x) == 0, 0, length(x)))
 count_zoo_NAfrica <- lapply(zoo_NAfrica, function(x) ifelse(length(x) == 0, 0, length(x)))
-names(count_geo_NAfrica) <- names_NAfrica
+names(count_geo_NAfrica) <-  names_MidleEastAfrica
 names(count_zoo_NAfrica) <- zoogeo
 count_geo_NAfrica <- unlist(count_geo_NAfrica)
 count_zoo_NAfrica <- unlist(count_zoo_NAfrica)
@@ -190,11 +194,6 @@ sf_count_africa <-
   right_join(df_count_africa, by = "admin") %>% 
   st_transform(crs = "+proj=robin")
 
-df_count_sa <- data.frame(admin = names(count_geo_sa), count = as.numeric(count_geo_sa))
-sf_count_sa <- 
-  sf_southAsia %>% 
-  right_join(df_count_sa, by = "admin") %>% 
-  st_transform(crs = "+proj=robin")
 
 df_count_NAfrica <- data.frame(admin = names(count_geo_NAfrica), count = as.numeric(count_geo_NAfrica))
 sf_count_NAfrica <- 
@@ -214,7 +213,6 @@ Making maps, two options, one coloring only World bank regions and another all c
 
 ```{r}
 
-library(rmapshaper)
 sf_mean_noisland <- ms_filter_islands(sf_mean, drop_null_geometries = T)
 
 map_markers_wb <-
@@ -232,7 +230,7 @@ map_markers_wb <-
                                title.position = "top",
                                label.position = "bottom",
                                title.hjust = 0.5)) +
-  labs(fill = "Total Markers") +
+  labs(fill = "Total Markers", subtitle = "") +
   xlab("") +
   ylab("") +
   theme(legend.position = "bottom",
@@ -241,46 +239,12 @@ map_markers_wb <-
         legend.text = element_text(family = "Times", color = "black", size = 10),
         axis.text = element_blank(),
         axis.ticks.x.bottom = element_blank(),
-        panel.border = element_blank(),
-        plot.subtitle = element_blank())
+        panel.border = element_blank())
   
-
-# map_all_countries <- 
-# ggplot() +
-#   geom_sf(data = countries) +
-#   geom_sf(data = sf_count_la, aes(fill = count)) +
-#   geom_sf(data = sf_count_us, aes(fill = count)) +
-#   geom_sf(data = sf_count_ea, aes(fill = count)) +
-#   geom_sf(data = sf_count_eu, aes(fill = count)) +
-#   geom_sf(data = sf_count_africa, aes(fill = count)) +
-#   geom_sf(data = sf_count_sa, aes(fill = count)) +
-#   geom_sf(data = sf_count_NAfrica, aes(fill = count))
-
 
 map_markers_wb
 
 
 ```
-
-Joining plots - citation and geo markers
-
-```{r}
-library(patchwork)
-plot_cit_geoMark <- 
-map_markers_wb / plot_violin  
-
-```
-
-
-# Saving plots
-```{r}
-ggplot2::ggsave(filename = here::here("output", "map_geo_markers_wb.png"), plot = map_markers_wb, device = "png", dpi = 200, width = 10, height = 8)
-
-ggplot2::ggsave(filename = here::here("output", "Fig1_cit_geoMark.png"), plot = plot_cit_geoMark, device = "png", dpi = 300, width = 15, height = 12)
-
-
-```
-
-
 
 
