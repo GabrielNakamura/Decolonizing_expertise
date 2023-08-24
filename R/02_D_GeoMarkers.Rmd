@@ -36,6 +36,8 @@ files_EU <- here::here("data", "raw", "EU_top1000.txt")
 M_EU <- convert2df(file = files_EU, dbsource = 'wos', format = "plaintext")
 files_EA <- here::here("data", "raw", "EastAsia_top1000.txt")
 M_EA <- convert2df(file = files_EA, dbsource = 'wos', format = "plaintext")
+files_SA <- here::here("data", "raw", "SouthAsia_top1000.txt")
+M_SA <- convert2df(file = files_SA, dbsource = 'wos', format = "plaintext")
 files_sahara <- here::here("data", "raw", "SubSahara_top1000.txt")
 M_sahara <- convert2df(file = files_sahara, dbsource = 'wos', format = "plaintext")
 files_mafrica <- here::here("data", "raw", "MiddleEastAfrica_top1000.txt")
@@ -63,6 +65,8 @@ names_MidleEastAfrica <- subset(countries, region_wb == "Middle East & North Afr
 sf_africa <- subset(countries, region_wb == "Middle East & North Africa")[, c("admin", "region_wb", "geometry")]
 names_EastAsia <- subset(countries, region_wb == "East Asia & Pacific")$admin
 sf_asia <- subset(countries, region_wb == "East Asia & Pacific")[, c("admin", "region_wb", "geometry")]
+names_SouthAsia <- subset(countries, region_wb == "South Asia")$admin
+sf_southasia <- subset(countries, region_wb == "South Asia")[, c("admin", "region_wb", "geometry")]
 names_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")$admin
 sf_SubSahara <- subset(countries, region_wb == "Sub-Saharan Africa")[, c("admin", "region_wb", "geometry")]
 ```
@@ -123,6 +127,18 @@ names(count_zoo_ea) <- zoogeo
 count_geo_ea <- unlist(count_geo_ea)
 count_zoo_ea <- unlist(count_zoo_ea)
 
+# South Asia
+
+geo_sa <- lapply(toupper(names_SouthAsia), function(x) grep(x, M_SA$TI, fixed = T))
+zoo_sa <- lapply(toupper(zoogeo), function(x) grep(x, M_SA$TI, fixed = T))
+count_geo_sa <- lapply(geo_sa, function(x) ifelse(length(x) == 0, 0, length(x)))
+count_zoo_sa <- lapply(zoo_sa, function(x) ifelse(length(x) == 0, 0, length(x)))
+names(count_geo_sa) <- names_SouthAsia
+names(count_zoo_sa) <- zoogeo
+count_geo_sa <- unlist(count_geo_sa)
+count_zoo_sa <- unlist(count_zoo_sa)
+
+
 # Africa 
 geo_africa <- lapply(toupper(names_SubSahara), function(x) grep(x, M_sahara$TI, fixed = T))
 zoo_africa <- lapply(toupper(zoogeo), function(x) grep(x, M_sahara$TI, fixed = T))
@@ -178,6 +194,13 @@ sf_count_ea <-
   right_join(df_count_asia, by = "admin") %>% 
   st_transform(crs = "+proj=robin")
 
+df_count_southasia <- data.frame(admin = names(count_geo_sa), count = as.numeric(count_geo_sa))
+sf_count_sa <- 
+  sf_southasia %>% 
+  right_join(df_count_southasia, by = "admin") %>% 
+  st_transform(crs = "+proj=robin")
+
+
 df_count_eu <- data.frame(admin = names(count_geo_eu), count = as.numeric(count_geo_eu))
 UK <- c("England", "Scotland", "Wales", "UK")
 UK_sum <- sum(df_count_eu[match(UK, df_count_eu$admin), "count"])
@@ -201,7 +224,7 @@ sf_count_NAfrica <-
   right_join(df_count_NAfrica, by = "admin") %>% 
   st_transform(crs = "+proj=robin")
 
-sf_all <- rbind(sf_count_africa, sf_count_ea, sf_count_eu, sf_count_la, sf_count_NAfrica, sf_count_us)
+sf_all <- rbind(sf_count_africa, sf_count_ea, sf_count_sa, sf_count_eu, sf_count_la, sf_count_NAfrica, sf_count_us)
 sf_mean <- sf_all %>% group_by(region_wb) %>% 
   summarise(sum_count=sum(count),
             .groups = 'drop')
@@ -209,15 +232,13 @@ sf_mean <- sf_all %>% group_by(region_wb) %>%
 ```
 
 
-Making maps, two options, one coloring only World bank regions and another all countries
+Making maps showing the number of geographical markers for each WB region
 
 ```{r}
 
-sf_mean_noisland <- ms_filter_islands(sf_mean, drop_null_geometries = T)
-
 map_markers_wb <-
   ggplot() +
-  geom_sf(data = sf_mean_noisland, aes(fill = sum_count)) +
+  geom_sf(data = sf_mean, aes(fill = sum_count)) +
   rcartocolor::scale_fill_carto_c(palette = "DarkMint",
                                   direction = 1,
                                   limits = c(10, 300),  ## max percent overall

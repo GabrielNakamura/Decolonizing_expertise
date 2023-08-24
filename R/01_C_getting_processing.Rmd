@@ -203,7 +203,7 @@ tab_citation_EU <- data.frame(countries = names(countries_cite_EU),
                               eu.citation.prop = as.vector(prop_countries_cite_EU))
 ```
 
-#### Queryng papers for Asia
+#### Queryng papers for East Asia
 
 ```{r}
 
@@ -235,6 +235,41 @@ tab_citation_EastAsia <- data.frame(countries = names(countries_cite_EastAsia),
                               EastAsia.citation = as.vector(countries_cite_EastAsia), 
                               EastAsia.citation.prop = as.vector(prop_countries_cite_EastAsia))
 ```
+
+
+#### Queryng papers for South Asia
+
+```{r}
+
+files <- here::here("data", "raw", "SouthAsia_top1000.txt")
+M <- convert2df(file = files, dbsource = 'wos', format = "plaintext")
+results_SouthAsia <- biblioAnalysis(M, sep = ";")
+M_single_SouthAsia <- M[which(unlist(lapply(strsplit(x = M$AU, split = ";"), function(x) length(x))) == 1), ]
+
+```
+
+Same procedure here. We extracted the top single author papers from East Asia region and obtained their ID to find the papers that cited these works
+
+```{r}
+southasia_names <- toupper(names_SouthAsia)
+s_paper_southasia <- unique(unlist(lapply(southasia_names, function(x) grep(x, M_single_SouthAsia$C1)))) # filtering by single author paper from LA 
+M_single_SouthAsia <- M_single_SouthAsia[s_paper_southasia, ] # unique single article papers from LA
+q_top_SouthAsia <- glue::glue("UT = (", glue::glue_collapse(M_single_SouthAsia$UT,  sep = ' OR '), ")") # querry for LA single-author paper 
+```
+
+Finally, I downloaded the information for 7000 studies that cited the top single author papers in South Asia
+
+```{r}
+files <- here::here("data", "processed", "SouthAsia_citing_articles", c("01_citing_SouthAsia.txt", "02_citing_SouthAsia.txt", "03_citing_SouthAsia.txt", "04_citing_SouthAsia.txt", "05_citing_SouthAsia.txt", "06_citing_SouthAsia.txt", "07_citing_SouthAsia.txt"))
+M_citations_SouthAsia <- convert2df(file = files, dbsource = 'wos', format = "plaintext") # this will take a few minutes
+results_citation_SouthAsia <- biblioAnalysis(M_citations_SouthAsia, sep = ";")
+countries_cite_SouthAsia <- results_citation_SouthAsia$Countries[order(results_citation_SouthAsia$Countries, decreasing = TRUE)]
+prop_countries_cite_SouthAsia <- (countries_cite_SouthAsia)/sum(countries_cite_SouthAsia)
+tab_citation_SouthAsia <- data.frame(countries = names(countries_cite_SouthAsia), 
+                              SouthAsia.citation = as.vector(countries_cite_SouthAsia), 
+                              SouthAsia.citation.prop = as.vector(prop_countries_cite_SouthAsia))
+```
+
 
 #### Queryng papers for Midle East Africa
 
